@@ -25,12 +25,12 @@ path_to_calibration_images = "camera_cal/*.jpg"
 #generate calibration image and object points based on supplied (chessboard) calibration images
 #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
 def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images): 
-    #a matrix of 3d coordinate values (each row holds an (x, y, z) point with each column being x, y, or z)
-    #z will stay 0 since the chessboard is a plane, but we'll generate the x and y coordinates automatically
-    calibration_object_points_template = np.mgrid[0:num_column_points, 0:num_row_points, 0:1].T.reshape(-1, 3).astype(np.float32)
-    #lists to store object points and image points for all calibration images
+    #lists to store object/image points for all calibration images
     calibration_object_points = [] #3d points in real world space
-    calibration_image_points = []  #2d points in image plane
+    calibration_image_points = []  #2d points on the image plane
+    #a matrix of 3d coordinate values (each row holds an (x, y, z) point with each column being x, y, or z)
+    #z will stay 0 since the chessboard is a plane, but we'll generate the x and y coordinates automatically (must be float coordinate points)
+    calibration_object_points_template = np.mgrid[0:num_column_points, 0:num_row_points, 0:1].T.reshape(-1, 3).astype(np.float32)
     #load calibration image file path list (file paths to images of chessboards to calibrate from) 
     calibration_image_file_path_list = glob.glob(path_to_calibration_images)
     #enumerate calibration image file path list, loading each image, converting to grayscale, then retrieving inside corner points
