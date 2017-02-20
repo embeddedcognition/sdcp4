@@ -17,12 +17,12 @@ import cv2
 ########################
 
 #inside corner count of chessboard calibration images
-num_column_points = 9
-num_row_points = 6
+num_column_points = 9  #total inside corner points across the x-axis
+num_row_points = 6     #total inside corner points across the y-axis
 #path to calibration images
 path_to_calibration_images = "camera_cal/*.jpg"
 
-#generate calibration image and object points based on supplied calibration images
+#generate calibration image and object points based on supplied (chessboard) calibration images
 #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
 def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images): 
     #a matrix of 3d coordinate values (each row holds an (x, y, z) point with each column being x, y, or z)
