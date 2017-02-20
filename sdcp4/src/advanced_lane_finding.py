@@ -17,17 +17,17 @@ import cv2
 ########################
 
 #inside corner count of chessboard calibration images
-num_inside_corners_cols = 9
-num_inside_corners_rows = 6
+num_column_points = 9
+num_row_points = 6
 #path to calibration images
 path_to_calibration_images = "camera_cal/*.jpg"
 
 #generate calibration image and object points based on supplied calibration images
 #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
-def generate_calibration_components(num_inside_corners_cols, num_inside_corners_rows, path_to_calibration_images): 
+def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images): 
     #a matrix of 3d coordinate values (each row holds an (x, y, z) point with each column being x, y, or z)
     #z will stay 0 since the chessboard is a plane, but we'll generate the x and y coordinates automatically
-    calibration_object_points_template = np.mgrid[0:num_inside_corners_cols, 0:num_inside_corners_rows, 0:1].T.reshape(-1, 3).astype(np.float32)
+    calibration_object_points_template = np.mgrid[0:num_column_points, 0:num_row_points, 0:1].T.reshape(-1, 3).astype(np.float32)
     #lists to store object points and image points for all calibration images
     calibration_object_points = [] #3d points in real world space
     calibration_image_points = []  #2d points in image plane
@@ -40,7 +40,7 @@ def generate_calibration_components(num_inside_corners_cols, num_inside_corners_
         #convert image to grayscale
         cur_calibration_image_grayscale = cv2.cvtColor(cur_calibration_image, cv2.COLOR_RGB2GRAY)
         #find image points (inside corners of chessboard) for cur_calibration_image_grayscale
-        allcornersfound, corners = cv2.findChessboardCorners(cur_calibration_image_grayscale, (num_inside_corners_cols, num_inside_corners_rows), None)
+        allcornersfound, corners = cv2.findChessboardCorners(cur_calibration_image_grayscale, (num_column_points, num_row_points), None)
         #if all internal corners where found (valid chessboard pattern displaying all internal corners)
         if (allcornersfound):
             #add image points found for cur_calibration_image_grayscale to image_points list
@@ -62,7 +62,7 @@ def perform_undistort(image, calibration_object_points, calibration_image_points
     return cv2.undistort(image, camera_matrix, distortion_coeff)
 
 #generete calibraiton componenets used to perform undistort
-calibration_object_points, calibration_image_points = generate_calibration_components(num_inside_corners_cols, num_inside_corners_rows, path_to_calibration_images)
+calibration_object_points, calibration_image_points = generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images)
 #test undistortion on an image
 #load image
 test_image = mpimg.imread("camera_cal/calibration1.jpg")
