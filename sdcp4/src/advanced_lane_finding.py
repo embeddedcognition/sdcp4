@@ -61,7 +61,7 @@ def perform_undistort(image, calibration_object_points, calibration_image_points
     #return the undistorted image
     return cv2.undistort(image, camera_matrix, distortion_coeff)
 
-#generete calibraiton componenets used to perform undistort
+#generate calibration componenets used to perform undistort
 calibration_object_points, calibration_image_points = generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images)
 #test undistortion on an image
 #load image
