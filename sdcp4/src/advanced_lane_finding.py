@@ -16,12 +16,6 @@ import cv2
 ## CAMERA CALIBRATION ##
 ########################
 
-#inside corner count of chessboard calibration images
-num_column_points = 9  #total inside corner points across the x-axis
-num_row_points = 6     #total inside corner points across the y-axis
-#path to calibration images
-path_to_calibration_images = "camera_cal/*.jpg"
-
 #generate calibration image and object points based on supplied (chessboard) calibration images
 #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
 def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images): 
@@ -51,7 +45,7 @@ def generate_calibration_components(num_column_points, num_row_points, path_to_c
     return (calibration_object_points, calibration_image_points)
 
 #transform an image to compensate for radial and tangential lens distortion
-#based on points taken from previous calibration images taken on that same camera 
+#based on points taken from previous calibration images taken with the same camera 
 def perform_undistort(image, calibration_object_points, calibration_image_points):
     #get image size in (x, y)
     image_size = (image.shape[1], image.shape[0])
@@ -61,12 +55,24 @@ def perform_undistort(image, calibration_object_points, calibration_image_points
     #return the undistorted image
     return cv2.undistort(image, camera_matrix, distortion_coeff)
 
+#inside corner count of chessboard calibration images
+num_column_points = 9  #total inside corner points across the x-axis
+num_row_points = 6     #total inside corner points across the y-axis
+#path to calibration images
+path_to_calibration_images = "camera_cal/*.jpg"
+
 #generate calibration componenets used to perform undistort
 calibration_object_points, calibration_image_points = generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images)
-#test undistortion on an image
+
+#test camera calibration by undistorting a test chessboard image
 #load image
 test_image = mpimg.imread("camera_cal/calibration1.jpg")
 #undistort image
 undistorted_test_image = perform_undistort(test_image, calibration_object_points, calibration_image_points)
 #save image
 mpimg.imsave("undistorted_test_images/calibration1.jpg", undistorted_test_image)
+
+###########################
+## PERSPECTIVE TRANSFORM ##
+###########################
+
