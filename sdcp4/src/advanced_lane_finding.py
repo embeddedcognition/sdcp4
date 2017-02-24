@@ -72,6 +72,12 @@ undistorted_test_image = perform_undistort(test_image, calibration_object_points
 #save image
 mpimg.imsave("undistorted_test_images/calibration1.jpg", undistorted_test_image)
 
+###############################
+## COLOR/GRADIENT THRESHOLD  ##
+###############################
+
+
+
 ###########################
 ## PERSPECTIVE TRANSFORM ##
 ###########################
