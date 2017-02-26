@@ -17,9 +17,9 @@ from color_gradient_thresholding import perform_thresholding
 #test the pipeline components and produce outputs in the 'output_images' folder
 def test_execute_pipeline(calibration_object_points, calibration_image_points):
     
-    ################################
-    ## TEST CAMERA CALIBRATION #####
-    ################################
+    #############################
+    ## TEST CAMERA CALIBRATION ##
+    #############################
     
     #test camera calibration by undistorting a test chessboard image
     #load image
