@@ -27,11 +27,19 @@ calibration_object_points, calibration_image_points = generate_calibration_compo
 
 #test camera calibration by undistorting a test chessboard image
 #load image
-test_image = mpimg.imread("camera_cal/calibration1.jpg")
+test_chessboard_image = mpimg.imread("camera_cal/calibration1.jpg")
 #undistort image
-undistorted_test_image = perform_undistort(test_image, calibration_object_points, calibration_image_points)
+undistorted_test_chessboard_image = perform_undistort(test_chessboard_image, calibration_object_points, calibration_image_points)
 #save image
-mpimg.imsave("output_images/undistorted_calibration1.jpg", undistorted_test_image)
+mpimg.imsave("output_images/undistorted_calibration1.jpg", undistorted_test_chessboard_image)
+
+#test camera calibration by undistorting a test road image
+#load image
+test_road_image = mpimg.imread("test_images/test4.jpg")
+#undistort image
+undistorted_test_road_image = perform_undistort(test_road_image, calibration_object_points, calibration_image_points)
+#save image
+mpimg.imsave("output_images/undistorted_test4.jpg", undistorted_test_road_image)
 
 ###############################
 ## COLOR/GRADIENT THRESHOLD  ##
