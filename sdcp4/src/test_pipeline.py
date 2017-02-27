@@ -7,12 +7,14 @@
 #############
 ## IMPORTS ##
 #############
+import cv2
 import numpy as np
 import matplotlib.image as mpimg
-import cv2
-from camera_calibration import generate_calibration_components, perform_undistort
+import matplotlib.pyplot as plt
+from camera_calibration import perform_undistort
 from perspective_transform import perform_perspective_transform
 from color_gradient_thresholding import perform_thresholding
+from lane_finder import compute_white_pixel_density_across_x_axis
 
 #test the pipeline components and produce outputs in the 'output_images' folder
 def test_execute_pipeline(calibration_object_points, calibration_image_points):
@@ -112,3 +114,30 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     thresholded_warped_undistorted_test_road_image = np.dstack((thresholded_warped_undistorted_test_road_image, thresholded_warped_undistorted_test_road_image, thresholded_warped_undistorted_test_road_image))
     #save image
     mpimg.imsave("output_images/thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image)
+    
+    ########################
+    ## TEST LANE FINDING  ##
+    ########################
+    
+    #set start position (y position...i.e., starting row number)
+    offset = int(thresholded_warped_undistorted_test_road_image.shape[0] / 2)
+    #set window size (height...i.e., number of rows) that should be summed per x-axis column
+    #this would normally be a fixed 'chunk', but to start, we're looking at the lower half of the image
+    window_size = thresholded_warped_undistorted_test_road_image.shape[0] - offset 
+    #compute pixel peaks across the x-axis of the image
+    white_pixel_density_histogram = compute_white_pixel_density_across_x_axis(thresholded_warped_undistorted_test_road_image, offset, window_size)
+    #plot result
+    plt.plot(white_pixel_density_histogram, color='b', linewidth=1)
+    plt.xlabel('Pixel position', fontsize=14)
+    plt.ylabel('White pixel density', fontsize=14)
+    plt.savefig("output_images/white_pixel_density_histogram_straight_lines1.jpg")
+    
+    # Find the peak of the left and right halves of the histogram
+    # These will be the starting point for the left and right lines
+    midpoint = np.int(white_pixel_density_histogram.shape[0]/2)
+    leftx_base = np.argmax(white_pixel_density_histogram[:midpoint])
+    rightx_base = np.argmax(white_pixel_density_histogram[midpoint:]) + midpoint
+
+
+    # Create an output image to draw on and visualize the result
+    out_img = np.dstack((final_warped_binary_image, final_warped_binary_image, final_warped_binary_image))*255

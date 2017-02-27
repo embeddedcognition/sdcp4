@@ -7,7 +7,7 @@
 #############
 ## IMPORTS ##
 #############
-from camera_calibration import generate_calibration_components, perform_undistort
+from camera_calibration import generate_calibration_components
 from test_pipeline import test_execute_pipeline
 
 ################################
@@ -27,7 +27,7 @@ calibration_object_points, calibration_image_points = generate_calibration_compo
 ## TEST PIPELINE #####
 ######################
 
-#test the execution of the pipeline stages (stages of the pipeline are  
+#test the execution of the pipeline stages (output from each stage is written to the 'output_images' folder)  
 test_execute_pipeline(calibration_object_points, calibration_image_points)
 
 ######################
