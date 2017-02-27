@@ -32,16 +32,16 @@ def gaussian_blur(image, kernel_size):
 
 #apply finite difference filter (Sobel) to an image
 def abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(0, 255)):
-    #Take the derivative in x or y given orient = 'x' or 'y'
+    #take the derivative in x or y given orient = 'x' or 'y'
     if (orient == 'x'):
         sobel = cv2.Sobel(image, cv2.CV_64F, 1, 0)
     else:
         sobel = cv2.Sobel(image, cv2.CV_64F, 0, 1)
-    #Take the absolute value of the derivative or gradient
+    #take the absolute value of the derivative or gradient
     abs_sobel = np.absolute(sobel)
-    #Scale to 8-bit (0 - 255) then convert to type = np.uint8
-    scaled_sobel = np.uint8(255*abs_sobel/np.max(abs_sobel))
-    #Create a mask of 1's where the scaled gradient magnitude is > thresh_min and < thresh_max
+    #scale to 8-bit (0 - 255) then convert to type = np.uint8
+    scaled_sobel = np.uint8((255 * abs_sobel) / np.max(abs_sobel))
+    #create a mask of 1's where the scaled gradient magnitude is > thresh_min and < thresh_max
     sbinary = np.zeros_like(scaled_sobel)
     sbinary[(scaled_sobel > thresh[0]) & (scaled_sobel <= thresh[1])] = 1
     #return result
