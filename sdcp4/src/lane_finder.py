@@ -14,4 +14,5 @@ import numpy as np
 #remember, (0, 0) of an image is the top left corner of that image
 def compute_white_pixel_density_across_x_axis(image, offset, window_size):
     #sum each column across the x-axis for the particular window in question (offset = y (row) start position, window_size = # of rows in column to sum)
+    #this will sum from offset to ((offset + window_size) - 1)
     return np.sum(image[offset:offset+window_size, :], axis=0)
