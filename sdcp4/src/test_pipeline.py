@@ -120,7 +120,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     ########################
     
     #set start position (y position...i.e., starting row number)
-    offset = int(thresholded_warped_undistorted_test_road_image.shape[0] / 2)
+    offset = np.int(thresholded_warped_undistorted_test_road_image.shape[0] / 2)
     #set window size (height...i.e., number of rows) that should be summed per x-axis column
     #this would normally be a fixed 'chunk', but to start, we're looking at the lower half of the image
     window_size = thresholded_warped_undistorted_test_road_image.shape[0] - offset 
@@ -132,10 +132,14 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     plt.ylabel('White pixel density', fontsize=14)
     plt.savefig("output_images/white_pixel_density_histogram_straight_lines1.jpg")
     
-    # Find the peak of the left and right halves of the histogram
-    # These will be the starting point for the left and right lines
-    midpoint = np.int(white_pixel_density_histogram.shape[0]/2)
+    #locate the peak of the left and right halves of the histogram
+    #these will be the starting point for the left and right lane lines
+    #divide the vector in half (get midpoint)
+    midpoint = np.int(white_pixel_density_histogram.shape[0] / 2)
+    #return the indices of the largest values in the vector from 0 to (midpoint - 1)
     leftx_base = np.argmax(white_pixel_density_histogram[:midpoint])
+    #return the indices of the largest values in the vector from (midpoint + 1) to (white_pixel_density_histogram.shape[0] - 1)
+    #also add in the index of the midpoint, since it was not counted in the left hand side 
     rightx_base = np.argmax(white_pixel_density_histogram[midpoint:]) + midpoint
 
     # Create an output image to draw on and visualize the result
