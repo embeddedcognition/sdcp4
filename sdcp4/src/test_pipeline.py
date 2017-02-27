@@ -138,6 +138,5 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     leftx_base = np.argmax(white_pixel_density_histogram[:midpoint])
     rightx_base = np.argmax(white_pixel_density_histogram[midpoint:]) + midpoint
 
-
     # Create an output image to draw on and visualize the result
-    out_img = np.dstack((final_warped_binary_image, final_warped_binary_image, final_warped_binary_image))*255
+    #out_img = np.dstack((final_warped_binary_image, final_warped_binary_image, final_warped_binary_image))*255
