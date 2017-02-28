@@ -10,11 +10,10 @@
 import cv2
 import numpy as np
 import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 from camera_calibration import perform_undistort
 from perspective_transform import perform_perspective_transform
 from color_gradient_thresholding import perform_thresholding
-from lane_finder import compute_white_pixel_density_across_x_axis
+from lane_finder import map_lane_line_pixel_locations, compute_lane_line_coefficients
 
 #test the pipeline components and produce outputs in the 'output_images' folder
 def test_execute_pipeline(calibration_object_points, calibration_image_points):
@@ -108,6 +107,8 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
 
     #apply thresholding to warped image and produce a binary result
     thresholded_warped_undistorted_test_road_image = perform_thresholding(warped_undistorted_test_road_image)
+    
+    #export as black and white image (instead of current single channel binary image which would be visualized as blue (representing zeros) and red (representing positive values 1 or 255) 
     #scale to 8-bit (0 - 255) then convert to type = np.uint8
     thresholded_warped_undistorted_test_road_image_scaled = np.uint8((255 * thresholded_warped_undistorted_test_road_image) / np.max(thresholded_warped_undistorted_test_road_image))
     #stack to create final black and white image
@@ -119,28 +120,54 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     ## TEST LANE FINDING  ##
     ########################
     
-    #set start position (y position...i.e., starting row number)
-    offset = np.int(thresholded_warped_undistorted_test_road_image.shape[0] / 2)
-    #set window size (height...i.e., number of rows) that should be summed per x-axis column
-    #this would normally be a fixed 'chunk', but to start, we're looking at the lower half of the image
-    window_size = thresholded_warped_undistorted_test_road_image.shape[0] - offset 
-    #compute pixel peaks across the x-axis of the image
-    white_pixel_density_histogram = compute_white_pixel_density_across_x_axis(thresholded_warped_undistorted_test_road_image, offset, window_size)
-    #plot result
-    plt.plot(white_pixel_density_histogram, color='b', linewidth=1)
-    plt.xlabel('Pixel position', fontsize=14)
-    plt.ylabel('White pixel density', fontsize=14)
-    plt.savefig("output_images/white_pixel_density_histogram_straight_lines1.jpg")
+    #map out the left and right lane line pixel locations 
+    leftx, lefty, rightx, righty, debug_image = map_lane_line_pixel_locations(thresholded_warped_undistorted_test_road_image, return_debug_image=True)
     
-    #locate the peak of the left and right halves of the histogram
-    #these will be the starting point for the left and right lane lines
-    #divide the vector in half (get midpoint)
-    midpoint = np.int(white_pixel_density_histogram.shape[0] / 2)
-    #return the indices of the largest values in the vector from 0 to (midpoint - 1)
-    leftx_base = np.argmax(white_pixel_density_histogram[:midpoint])
-    #return the indices of the largest values in the vector from (midpoint + 1) to (white_pixel_density_histogram.shape[0] - 1)
-    #also add in the index of the midpoint, since it was not counted in the left hand side 
-    rightx_base = np.argmax(white_pixel_density_histogram[midpoint:]) + midpoint
+    #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
+    #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
+    #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
+    left_fit, right_fit = compute_lane_line_coefficients(leftx, lefty, rightx, righty)
+    
+    #plot the left and right fitted polynomials on the debug image
+    #generate x and y values for plotting
+    ploty = np.linspace(0, thresholded_warped_undistorted_test_road_image.shape[0]-1, thresholded_warped_undistorted_test_road_image.shape[0])
+    
+    #left lane fitted polynomial (f(y) = A(y^2) + By + C)
+    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+    #right lane fitted polynomial (f(y) = A(y^2) + By + C)
+    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
 
-    # Create an output image to draw on and visualize the result
-    #out_img = np.dstack((final_warped_binary_image, final_warped_binary_image, final_warped_binary_image))*255
+    #draw the fitted polynomials on the debug_image and export
+    #recast the x and y points into usable format for cv2.fillPoly()
+    pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+    #pts = np.hstack((pts_left, pts_right))
+    #draw lines
+    cv2.polylines(debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    cv2.polylines(debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    #save image
+    mpimg.imsave("output_images/fitted_polynomials_straight_lines1.jpg", debug_image)
+    
+    ######################################
+    ## TEST PROJECTION BACK ON TO ROAD  ##
+    ######################################
+    
+    #create an image to draw the lines on
+    color_warp = np.zeros_like(warped_undistorted_test_road_image).astype(np.uint8)
+
+    # Recast the x and y points into usable format for cv2.fillPoly()
+    pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+    pts = np.hstack((pts_left, pts_right))
+
+    #draw the lane onto the warped blank image
+    cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+    #transform perspective back to original
+    warped_to_original = perform_perspective_transform(color_warp, dest_vertices, src_vertices)
+
+    #combine the result with the original image
+    projected_lane = cv2.addWeighted(undistorted_test_road_image, 1, warped_to_original, 0.3, 0)
+    
+    #save image
+    mpimg.imsave("output_images/projected_lane_straight_lines1.jpg", projected_lane)
