@@ -7,8 +7,14 @@
 #############
 ## IMPORTS ##
 #############
-import numpy as np
+from moviepy.editor import VideoFileClip
 
 #run the pipeline on the provided video
-def execute_pipeline():
+def execute_pipeline(calibration_object_points, calibration_image_points):
+    video_handle = VideoFileClip("test_videos/project_video.mp4")
+    video_handle = video_handle.fl_image(process_frame)
+    video_handle.write_videofile("output_videos/processed_project_video.mp4", audio=False)
+
+#run the pipeline on the provided video
+def process_frame():
     return None
