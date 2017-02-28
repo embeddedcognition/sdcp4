@@ -109,11 +109,11 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #apply thresholding to warped image and produce a binary result
     thresholded_warped_undistorted_test_road_image = perform_thresholding(warped_undistorted_test_road_image)
     #scale to 8-bit (0 - 255) then convert to type = np.uint8
-    thresholded_warped_undistorted_test_road_image = np.uint8((255 * thresholded_warped_undistorted_test_road_image) / np.max(thresholded_warped_undistorted_test_road_image))
-    #stack (create color image)
-    thresholded_warped_undistorted_test_road_image = np.dstack((thresholded_warped_undistorted_test_road_image, thresholded_warped_undistorted_test_road_image, thresholded_warped_undistorted_test_road_image))
+    thresholded_warped_undistorted_test_road_image_scaled = np.uint8((255 * thresholded_warped_undistorted_test_road_image) / np.max(thresholded_warped_undistorted_test_road_image))
+    #stack to create final black and white image
+    thresholded_warped_undistorted_test_road_image_bw = np.dstack((thresholded_warped_undistorted_test_road_image_scaled, thresholded_warped_undistorted_test_road_image_scaled, thresholded_warped_undistorted_test_road_image_scaled))
     #save image
-    mpimg.imsave("output_images/thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image)
+    mpimg.imsave("output_images/thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image_bw)
     
     ########################
     ## TEST LANE FINDING  ##
