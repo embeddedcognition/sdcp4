@@ -108,8 +108,6 @@ def map_lane_line_pixel_locations(image, return_debug_image=False):
             cv2.rectangle(debug_image,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),(0,255,0), 2) 
             cv2.rectangle(debug_image,(win_xright_low,win_y_low),(win_xright_high,win_y_high),(0,255,0), 2) 
     
-        ###can we use numpy where here ??? ###
-    
         #identify the nonzero pixels in x and y within the window
         good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
         good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
