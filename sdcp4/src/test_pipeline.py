@@ -10,12 +10,12 @@
 import cv2
 import numpy as np
 import matplotlib.image as mpimg
-from camera_calibration import perform_undistort
-from perspective_transform import perform_perspective_transform
-from color_gradient_thresholding import perform_thresholding
-from lane_finder import map_lane_line_pixel_locations, compute_lane_line_coefficients
+from calibration_processor import perform_undistort
+from perspective_processor import perform_perspective_transform
+from threshold_processor import perform_thresholding
+from lane_processor import map_lane_line_pixel_locations, compute_lane_line_coefficients
 
-#test the pipeline components and produce outputs in the 'output_images' folder
+#test the production_pipeline components and produce outputs in the 'output_images' folder
 def test_execute_pipeline(calibration_object_points, calibration_image_points):
     
     #############################
@@ -33,7 +33,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #test camera calibration by undistorting a test road image
     #load image
     test_road_image = mpimg.imread("test_images/straight_lines1.jpg")
-    #undistort image - this undistorted image will be used to demonstrate the pipeline along the way (all outputs will be placed in 'output_images' folder)
+    #undistort image - this undistorted image will be used to demonstrate the production_pipeline along the way (all outputs will be placed in 'output_images' folder)
     undistorted_test_road_image = perform_undistort(test_road_image, calibration_object_points, calibration_image_points)
     #save image
     mpimg.imsave("output_images/undistorted_straight_lines1.jpg", undistorted_test_road_image)
