@@ -81,7 +81,9 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
          dest_lower_right,
          dest_upper_right])
 
-    #transform perspective (warp)
+    #transform perspective (warp) - this will squish the depth of field in the source mapping into the height of the image, 
+    #which will make the upper 3/4ths blurry, need to adjust dest_upper* y-values to negative to stretch it out and clear the transformed image up
+    #we won't do that as we'll lose right dashes in the 720 pix height of the image frame 
     warped_undistorted_test_road_image = perform_perspective_transform(undistorted_test_road_image, src_vertices, dest_vertices)
     #save image
     mpimg.imsave("output_images/warped_straight_lines1.jpg", warped_undistorted_test_road_image)
