@@ -10,6 +10,13 @@
 import numpy as np
 import cv2
 
+#compute the density white pixels across the x-axis within a specified y-axis chunk/window 
+#remember, (0, 0) of an image is the top left corner of that image
+def compute_white_pixel_density_across_x_axis(image, offset, window_size):
+    #sum each column across the x-axis for the particular window in question (offset = y (row) start position, window_size = # of rows in each column to sum)
+    #this will sum from offset to ((offset + window_size) - 1)
+    return np.sum(image[offset:offset+window_size, :], axis=0)
+
 #apply region mask to an image
 def region_of_interest(image, vertices):
     #defining a blank mask to start with
@@ -81,7 +88,7 @@ def perform_thresholding(warped_undistorted_image):
     #convert to binary
     filtered_binary = cv2.cvtColor(filtered_rgb, cv2.COLOR_RGB2GRAY)
     filtered_binary[filtered_binary < 128] = 0    #black
-    filtered_binary[filtered_binary >= 128] = 255 #white
+    filtered_binary[filtered_binary >= 128] = 1   #white
 
     #convert to hls color space to add robustness to lane identification
     hls = cv2.cvtColor(warped_undistorted_image, cv2.COLOR_RGB2HLS)
@@ -100,5 +107,23 @@ def perform_thresholding(warped_undistorted_image):
     #'or' the two
     s_final = cv2.bitwise_or(s_sobel_x, s_filter)
     
+    #compute the white pixel density score for the s-channel (build resiliency against degraded s-channel)
+    #get the count of non-zero pixels in the image (i.e., how may 1's are there) - just counting the number of y-coordinates returned 
+    #(could have also counted just the x-coordinates)
+    white_pixel_count = len((s_final.nonzero())[0])
+    #density score is the number of positive (white) pixels in the image divided by the total number of pixels in the image
+    density_score = white_pixel_count / (s_final.shape[0] * s_final.shape[1])
+    
+    #combine the l and binary hsv channel as normal
+    final_binary_image = cv2.bitwise_or(l_sobel_x, filtered_binary)
+    
+    #if the s-channel has a sufficiently low white pixel density
+    #a good density score (binary s-channel with sold left and dashed right identified) will be ~0.03
+    #a bad density score (binary s-channel with a lot of white clouding/blotching) will be ~0.40
+    #0.15 is an arbitrary threshold that gives a lot of headroom for variation and noise
+    if (density_score < 0.15):
+        #combine the l and binary hsv with the s-channel (if not, leave it out)
+        final_binary_image = cv2.bitwise_and(s_final, final_binary_image)
+    
     #combine the three and return
-    return cv2.bitwise_and(s_final, cv2.bitwise_or(l_sobel_x, filtered_binary))
+    return final_binary_image

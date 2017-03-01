@@ -10,13 +10,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-
-#compute the density white pixels across the x-axis within a specified y-axis chunk/window 
-#remember, (0, 0) of an image is the top left corner of that image
-def compute_white_pixel_density_across_x_axis(image, offset, window_size):
-    #sum each column across the x-axis for the particular window in question (offset = y (row) start position, window_size = # of rows in each column to sum)
-    #this will sum from offset to ((offset + window_size) - 1)
-    return np.sum(image[offset:offset+window_size, :], axis=0)
+from threshold_processor import compute_white_pixel_density_across_x_axis
 
 #estimate the base location of the lane lines using white pixel density across the bottom half of the image
 def estimate_base_location_of_lane_lines(image, export_debug_image=False):
