@@ -33,6 +33,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #test camera calibration by undistorting a test road image
     #load image
     test_road_image = mpimg.imread("test_images/straight_lines1.jpg")
+    #test_road_image = mpimg.imread("test_images/test7.jpg")
     #undistort image - this undistorted image will be used to demonstrate the production_pipeline along the way (all outputs will be placed in 'output_images' folder)
     undistorted_test_road_image = perform_undistort(test_road_image, calibration_object_points, calibration_image_points)
     #save image
@@ -47,8 +48,8 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     line_thickness = 3
 
     #set source vertices for region mask
-    src_upper_left =  (472, 500)
-    src_upper_right = (806, 500)
+    src_upper_left =  (517, 478)
+    src_upper_right = (762, 478)
     src_lower_left = (0, 720)
     src_lower_right = (1280, 720)
 

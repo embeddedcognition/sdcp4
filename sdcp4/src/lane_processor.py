@@ -10,9 +10,9 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from threshold_processor import compute_white_pixel_density_across_x_axis
+from threshold_processor import compute_hot_pixel_density_across_x_axis
 
-#estimate the base location of the lane lines using white pixel density across the bottom half of the image
+#estimate the base location of the lane lines using the hot (value of 1) pixel density across the bottom half of the image
 def estimate_base_location_of_lane_lines(image, export_debug_image=False):
     #set start position (y position...i.e., starting row number)
     offset = np.int(image.shape[0] / 2)
@@ -21,18 +21,18 @@ def estimate_base_location_of_lane_lines(image, export_debug_image=False):
     window_size = image.shape[0] - offset 
     
     #compute pixel peaks across the x-axis of the image
-    white_pixel_density_histogram = compute_white_pixel_density_across_x_axis(image, offset, window_size)
+    hot_pixel_density_histogram = compute_hot_pixel_density_across_x_axis(image, offset, window_size)
     
     #if true export a debug image
     if (export_debug_image):
         #plot result
-        plt.plot(white_pixel_density_histogram, color='b', linewidth=1)
+        plt.plot(hot_pixel_density_histogram, color='b', linewidth=1)
         plt.xlabel('Pixel position', fontsize=14)
-        plt.ylabel('White pixel density', fontsize=14)
-        plt.savefig("output_images/white_pixel_density_histogram_straight_lines1.jpg")
+        plt.ylabel('Hot pixel density', fontsize=14)
+        plt.savefig("output_images/hot_pixel_density_histogram_straight_lines1.jpg")
         
     #return vector
-    return white_pixel_density_histogram
+    return hot_pixel_density_histogram
 
 #compute the coefficients for the line equations by fitting a polynomial to the left and right lane pixel locations
 def compute_lane_line_coefficients(leftx, lefty, rightx, righty):
@@ -58,18 +58,18 @@ def map_lane_line_pixel_locations(image, return_debug_image=False):
     #if debug is set, the windows are visualized on a returned debug image
     debug_image = None
     
-    #estimate base location of lane lines using white pixel density counts in the lower half of the image 
-    white_pixel_density_histogram = estimate_base_location_of_lane_lines(image, export_debug_image=True)
+    #estimate base location of lane lines using the hot (value of 1) pixel density counts in the lower half of the image 
+    hot_pixel_density_histogram = estimate_base_location_of_lane_lines(image, export_debug_image=True)
     
     #locate the peak of the left and right halves of the histogram
     #these will be the starting point for the left and right lane lines
     #divide the vector in half (get midpoint)
-    midpoint = np.int(white_pixel_density_histogram.shape[0] / 2)
+    midpoint = np.int(hot_pixel_density_histogram.shape[0] / 2)
     #return the indices of the largest values in the vector from 0 to (midpoint - 1)
-    leftx_base = np.argmax(white_pixel_density_histogram[:midpoint])
-    #return the indices of the largest values in the vector from (midpoint + 1) to (white_pixel_density_histogram.shape[0] - 1)
+    leftx_base = np.argmax(hot_pixel_density_histogram[:midpoint])
+    #return the indices of the largest values in the vector from (midpoint + 1) to (hot_pixel_density_histogram.shape[0] - 1)
     #also add in the index of the midpoint, since it was not counted in the left hand side 
-    rightx_base = np.argmax(white_pixel_density_histogram[midpoint:]) + midpoint
+    rightx_base = np.argmax(hot_pixel_density_histogram[midpoint:]) + midpoint
     
     #current positions to be updated for each window
     leftx_current = leftx_base
