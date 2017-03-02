@@ -144,7 +144,6 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #recast the x and y points into usable format for cv2.fillPoly()
     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
-    #pts = np.hstack((pts_left, pts_right))
     #draw lines
     cv2.polylines(debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     cv2.polylines(debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)

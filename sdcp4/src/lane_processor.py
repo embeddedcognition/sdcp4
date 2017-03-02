@@ -59,7 +59,7 @@ def map_lane_line_pixel_locations(image, return_debug_image=False):
     debug_image = None
     
     #estimate base location of lane lines using the hot (value of 1) pixel density counts in the lower half of the image 
-    hot_pixel_density_histogram = estimate_base_location_of_lane_lines(image, export_debug_image=True)
+    hot_pixel_density_histogram = estimate_base_location_of_lane_lines(image, export_debug_image=return_debug_image)
     
     #locate the peak of the left and right halves of the histogram
     #these will be the starting point for the left and right lane lines
