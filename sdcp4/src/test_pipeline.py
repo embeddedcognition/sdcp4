@@ -170,7 +170,6 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #recast the x and y points into usable format for polylines and fillPoly
     pts_left = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly, y_linespace]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly, y_linespace])))])
-    pts = np.hstack((pts_left, pts_right))
     #draw lines (on the educated search debug image)
     cv2.polylines(educated_debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     cv2.polylines(educated_debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
@@ -185,6 +184,7 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     warped_lane = np.zeros_like(warped_undistorted_test_road_image).astype(np.uint8)
 
     #draw the lane onto the warped blank image
+    pts = np.hstack((pts_left, pts_right))
     cv2.fillPoly(warped_lane, np.int_([pts]), (152, 251, 152))
     
     #draw fitted lines on image
