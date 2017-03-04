@@ -17,29 +17,12 @@ def compute_hot_pixel_density_across_x_axis(image, offset, window_size):
     #this will sum from offset to ((offset + window_size) - 1)
     return np.sum(image[offset:offset+window_size, :], axis=0)
 
-#apply region mask to an image
-def region_of_interest(image, vertices):
-    #defining a blank mask to start with
-    mask = np.zeros_like(image)   
-    #defining a 3 channel or 1 channel color to fill the mask with depending on the input image
-    if len(image.shape) > 2:
-        channel_count = image.shape[2]  # i.e. 3 or 4 depending on your image
-        ignore_mask_color = (255,) * channel_count
-    else:
-        ignore_mask_color = 255
-    #filling pixels inside the polygon defined by "vertices" with the fill color    
-    cv2.fillPoly(mask, vertices, ignore_mask_color)
-    #returning the image only where mask pixels are nonzero
-    masked_image = cv2.bitwise_and(image, mask)
-    #return masked image
-    return masked_image
-
 #apply gaussian blur to an image
-def gaussian_blur(image, kernel_size):
+def apply_gaussian_blur(image, kernel_size):
     return cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
 
 #apply finite difference filter (Sobel) to an image
-def gradient_filter(image, orient='x', sobel_kernel=3, threshold=(0, 255)):
+def apply_gradient_filter(image, orient='x', sobel_kernel=3, threshold=(0, 255)):
     #take the derivative in x or y given orient = 'x' or 'y'
     if (orient == 'x'):
         sobel = cv2.Sobel(image, cv2.CV_64F, 1, 0)
@@ -56,7 +39,7 @@ def gradient_filter(image, orient='x', sobel_kernel=3, threshold=(0, 255)):
     return binary
 
 #apply color thresholding to the h, l, & s channels to enhance yellow and white lines
-def perform_hls_channel_color_thresholding(h, l, s):
+def apply_hls_channel_color_thresholding(h, l, s):
     #hue (represents color independent of any change in brightness)
     h_threshold = (0, 50)
     #treat the original as immutable
@@ -87,17 +70,17 @@ def perform_hls_channel_color_thresholding(h, l, s):
     return binary
 
 #apply gradient thresholding to the hls 'lightness' channel (l)
-def perform_l_channel_gradient_thresholding(l):
+def apply_l_channel_gradient_thresholding(l):
     #smooth channel (blurring first allows us to set a higher 'low' threshold - e.g., less noise)
-    l_blurred = gaussian_blur(l, 45)
+    l_blurred = apply_gaussian_blur(l, 45)
     #apply finite difference filter (Sobel - across x-axis)
-    return gradient_filter(l_blurred, orient='x', threshold=(45, 255))
+    return apply_gradient_filter(l_blurred, orient='x', threshold=(45, 255))
 
 #apply gradient & value thresholding to the hls 'saturation' channel (s)
-def perform_s_channel_gradient_and_value_thresholding(s):
+def apply_s_channel_gradient_and_value_thresholding(s):
     #apply finite difference filter (Sobel - across x-axis)
-    s_sobel_x = gradient_filter(s, orient='x', threshold=(15, 255))
-    ##apply value thresholding to raw channel as well
+    s_sobel_x = apply_gradient_filter(s, orient='x', threshold=(15, 255))
+    #apply value thresholding to raw channel as well
     s_filter = np.zeros_like(s)
     s_filter[(s >= 150) & (s <= 255)] = 1
     #'or' the two and return
@@ -112,11 +95,11 @@ def perform_thresholding(image):
     l = hls[:, :, 1]
     s = hls[:, :, 2]
     #perform hls-channel color thresholding and return a binary image
-    hls_binary = perform_hls_channel_color_thresholding(h, l, s)
+    hls_binary = apply_hls_channel_color_thresholding(h, l, s)
     #perform l-channel gradient thresholding and return binary image
-    l_binary = perform_l_channel_gradient_thresholding(l)
+    l_binary = apply_l_channel_gradient_thresholding(l)
     #perform s-channel gradient and value thresholding and return binary image
-    s_binary = perform_s_channel_gradient_and_value_thresholding(s)
+    s_binary = apply_s_channel_gradient_and_value_thresholding(s)
     #compute the hot pixel density score for the s_bianry image (build resiliency against degraded image due to difficult frame)
     #get the count of non-zero pixels in the image (i.e., how may 1's are there) - just counting the number of y-coordinates returned 
     #(could have also counted just the x-coordinates)

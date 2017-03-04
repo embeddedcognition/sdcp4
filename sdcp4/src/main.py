@@ -8,8 +8,8 @@
 ## IMPORTS ##
 #############
 from calibration_processor import generate_calibration_components
-from test_pipeline import test_execute_pipeline
-from production_pipeline import execute_pipeline
+from test_pipeline import execute_test_pipeline
+from production_pipeline import execute_production_pipeline
 
 ################################
 ## PERFORM CAMERA CALIBRATION ##
@@ -29,12 +29,12 @@ calibration_object_points, calibration_image_points = generate_calibration_compo
 ######################
 
 #test the execution of the pipeline stages (output from each stage is written to the 'output_images' folder)  
-test_execute_pipeline(calibration_object_points, calibration_image_points)
+execute_test_pipeline(calibration_object_points, calibration_image_points)
 
 ######################
 ## RUN PIPELINE ######
 ######################
 
 #execute the pipeline - producing a video  
-execute_pipeline(calibration_object_points, calibration_image_points)
+execute_production_pipeline(calibration_object_points, calibration_image_points)
 

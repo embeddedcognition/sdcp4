@@ -13,10 +13,10 @@ import matplotlib.image as mpimg
 from calibration_processor import perform_undistort
 from perspective_processor import perform_perspective_transform
 from threshold_processor import perform_thresholding
-from lane_processor import map_lane_line_pixel_locations, compute_lane_line_coefficients
+from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients
 
-#test the production_pipeline components and produce outputs in the 'output_images' folder
-def test_execute_pipeline(calibration_object_points, calibration_image_points):
+#test the pipeline components and produce outputs in the 'output_images' folder
+def execute_test_pipeline(calibration_object_points, calibration_image_points):
     
     #############################
     ## TEST CAMERA CALIBRATION ##
@@ -28,7 +28,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #undistort image
     undistorted_test_chessboard_image = perform_undistort(test_chessboard_image, calibration_object_points, calibration_image_points)
     #save image
-    mpimg.imsave("output_images/undistorted_calibration1.jpg", undistorted_test_chessboard_image)
+    mpimg.imsave("output_images/stage0_undistorted_calibration1.jpg", undistorted_test_chessboard_image)
 
     #test camera calibration by undistorting a test road image
     #load image
@@ -37,7 +37,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #undistort image - this undistorted image will be used to demonstrate the production_pipeline along the way (all outputs will be placed in 'output_images' folder)
     undistorted_test_road_image = perform_undistort(test_road_image, calibration_object_points, calibration_image_points)
     #save image
-    mpimg.imsave("output_images/undistorted_straight_lines1.jpg", undistorted_test_road_image)
+    mpimg.imsave("output_images/stage0_undistorted_straight_lines1.jpg", undistorted_test_road_image)
 
     ################################
     ## TEST PERSPECTIVE TRANSFORM ##
@@ -67,7 +67,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     cv2.line(src_vertices_image, src_upper_right, src_lower_right, line_color, line_thickness)
     cv2.line(src_vertices_image, src_lower_left, src_lower_right, line_color, line_thickness)
     #save image
-    mpimg.imsave("output_images/src_vertices_straight_lines1.jpg", src_vertices_image)
+    mpimg.imsave("output_images/stage1_src_vertices_straight_lines1.jpg", src_vertices_image)
 
     #set destination vertices (for perspective transform)
     dest_upper_left = (0, 0)
@@ -87,7 +87,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #we won't do that as we'll lose right dashes in the 720 pix height of the image frame 
     warped_undistorted_test_road_image = perform_perspective_transform(undistorted_test_road_image, src_vertices, dest_vertices)
     #save image
-    mpimg.imsave("output_images/warped_straight_lines1.jpg", warped_undistorted_test_road_image)
+    mpimg.imsave("output_images/stage1_warped_straight_lines1.jpg", warped_undistorted_test_road_image)
 
     #draw lines on warped test road image to check alignment of lanes
     lane_alignment_warped_undistorted_test_road_image = warped_undistorted_test_road_image.copy() #copy as not to affect original image
@@ -102,7 +102,7 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     cv2.line(lane_alignment_warped_undistorted_test_road_image, lane_alignment_upper_right, lane_alignment_lower_right, line_color, line_thickness)
     cv2.line(lane_alignment_warped_undistorted_test_road_image, lane_alignment_lower_left, lane_alignment_lower_right, line_color, line_thickness)
     #save image
-    mpimg.imsave("output_images/lane_alignment_warped_straight_lines1.jpg", lane_alignment_warped_undistorted_test_road_image)
+    mpimg.imsave("output_images/stage1_lane_alignment_warped_straight_lines1.jpg", lane_alignment_warped_undistorted_test_road_image)
 
     ####################################
     ## TEST COLOR/GRADIENT THRESHOLD  ##
@@ -117,59 +117,61 @@ def test_execute_pipeline(calibration_object_points, calibration_image_points):
     #stack to create final black and white image
     thresholded_warped_undistorted_test_road_image_bw = np.dstack((thresholded_warped_undistorted_test_road_image_scaled, thresholded_warped_undistorted_test_road_image_scaled, thresholded_warped_undistorted_test_road_image_scaled))
     #save image
-    mpimg.imsave("output_images/thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image_bw)
+    mpimg.imsave("output_images/stage2_thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image_bw)
     
-    ########################
-    ## TEST LANE FINDING  ##
-    ########################
+    ##########################
+    ## TEST LANE DETECTION  ##
+    ##########################
     
-    #map out the left and right lane line pixel locations 
-    leftx, lefty, rightx, righty, debug_image = map_lane_line_pixel_locations(thresholded_warped_undistorted_test_road_image, return_debug_image=True)
+    #map out the left and right lane line pixel coordinates via windowed search
+    left_lane_pixel_coordinates, right_lane_pixel_coordinates, debug_image = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, return_debug_image=True)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
     #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
-    left_fit, right_fit = compute_lane_line_coefficients(leftx, lefty, rightx, righty)
+    left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
     
-    #plot the left and right fitted polynomials on the debug image
-    #generate x and y values for plotting
-    ploty = np.linspace(0, thresholded_warped_undistorted_test_road_image.shape[0]-1, thresholded_warped_undistorted_test_road_image.shape[0])
+    #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
+    y_linespace = np.linspace(0, (thresholded_warped_undistorted_test_road_image.shape[0] - 1), thresholded_warped_undistorted_test_road_image.shape[0])
     
     #left lane fitted polynomial (f(y) = A(y^2) + By + C)
-    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+    left_lane_line_fitted_poly = (left_lane_line_coeff[0] * (y_linespace ** 2)) + (left_lane_line_coeff[1] * y_linespace) + left_lane_line_coeff[2]
     #right lane fitted polynomial (f(y) = A(y^2) + By + C)
-    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+    right_lane_line_fitted_poly = (right_lane_line_coeff[0] * (y_linespace ** 2)) + (right_lane_line_coeff[1] * y_linespace) + right_lane_line_coeff[2]
 
     #draw the fitted polynomials on the debug_image and export
-    #recast the x and y points into usable format for cv2.fillPoly()
-    pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
-    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+    #recast the x and y points into usable format for polylines and fillPoly
+    pts_left = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly, y_linespace]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly, y_linespace])))])
+    pts = np.hstack((pts_left, pts_right))
     #draw lines
     cv2.polylines(debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     cv2.polylines(debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     #save image
-    mpimg.imsave("output_images/fitted_polynomials_straight_lines1.jpg", debug_image)
+    mpimg.imsave("output_images/stage3_blind_search_fitted_polynomials_straight_lines1.jpg", debug_image)
     
     ######################################
     ## TEST PROJECTION BACK ON TO ROAD  ##
     ######################################
     
     #create an image to draw the lines on
-    color_warp = np.zeros_like(warped_undistorted_test_road_image).astype(np.uint8)
-
-    # Recast the x and y points into usable format for cv2.fillPoly()
-    pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
-    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
-    pts = np.hstack((pts_left, pts_right))
+    warped_lane = np.zeros_like(warped_undistorted_test_road_image).astype(np.uint8)
 
     #draw the lane onto the warped blank image
-    cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+    cv2.fillPoly(warped_lane, np.int_([pts]), (152, 251, 152)) #(128, 128, 0)) #(0, 255, 0)
+    
+    #draw fitted lines on image
+    cv2.polylines(warped_lane, np.int_([pts_left]), False, color=(189,183,107), thickness=20, lineType=cv2.LINE_AA)
+    cv2.polylines(warped_lane, np.int_([pts_right]), False, color=(189,183,107), thickness=20, lineType=cv2.LINE_AA)
+
+    #save image
+    mpimg.imsave("output_images/stage4_warped_lane_straight_lines1.jpg", warped_lane)
 
     #transform perspective back to original
-    warped_to_original = perform_perspective_transform(color_warp, dest_vertices, src_vertices)
+    warped_to_original_perspective = perform_perspective_transform(warped_lane, dest_vertices, src_vertices)
 
     #combine the result with the original image
-    projected_lane = cv2.addWeighted(undistorted_test_road_image, 1, warped_to_original, 0.3, 0)
+    projected_lane = cv2.addWeighted(undistorted_test_road_image, 1, warped_to_original_perspective, 0.3, 0)
     
     #save image
-    mpimg.imsave("output_images/projected_lane_straight_lines1.jpg", projected_lane)
+    mpimg.imsave("output_images/stage4_projected_lane_straight_lines1.jpg", projected_lane)
