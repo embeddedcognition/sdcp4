@@ -119,12 +119,12 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #save image
     mpimg.imsave("output_images/stage2_thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image_bw)
     
-    ##########################
-    ## TEST LANE DETECTION  ##
-    ##########################
+    #########################################
+    ## TEST LANE DETECTION - BLIND SEARCH  ##
+    #########################################
     
     #map out the left and right lane line pixel coordinates via windowed search
-    left_lane_pixel_coordinates, right_lane_pixel_coordinates, debug_image = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, return_debug_image=True)
+    left_lane_pixel_coordinates, right_lane_pixel_coordinates, blind_debug_image = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, return_debug_image=True)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
@@ -144,11 +144,42 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     pts_left = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly, y_linespace]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly, y_linespace])))])
     pts = np.hstack((pts_left, pts_right))
-    #draw lines
-    cv2.polylines(debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
-    cv2.polylines(debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    #draw lines (on the blind search debug image)
+    cv2.polylines(blind_debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    cv2.polylines(blind_debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     #save image
-    mpimg.imsave("output_images/stage3_blind_search_fitted_polynomials_straight_lines1.jpg", debug_image)
+    mpimg.imsave("output_images/stage3_blind_search_fitted_polynomials_straight_lines1.jpg", blind_debug_image)
+    
+    ############################################
+    ## TEST LANE DETECTION - EDUCATED SEARCH  ##
+    ############################################
+    
+    #map out the left and right lane line pixel coordinates via windowed search
+    left_lane_pixel_coordinates, right_lane_pixel_coordinates, educated_debug_image = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, left_lane_line_fitted_poly, right_lane_line_fitted_poly, return_debug_image=False)
+    
+    #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
+    #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
+    #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
+    left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
+    
+    #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
+    y_linespace = np.linspace(0, (thresholded_warped_undistorted_test_road_image.shape[0] - 1), thresholded_warped_undistorted_test_road_image.shape[0])
+    
+    #left lane fitted polynomial (f(y) = A(y^2) + By + C)
+    left_lane_line_fitted_poly = (left_lane_line_coeff[0] * (y_linespace ** 2)) + (left_lane_line_coeff[1] * y_linespace) + left_lane_line_coeff[2]
+    #right lane fitted polynomial (f(y) = A(y^2) + By + C)
+    right_lane_line_fitted_poly = (right_lane_line_coeff[0] * (y_linespace ** 2)) + (right_lane_line_coeff[1] * y_linespace) + right_lane_line_coeff[2]
+
+    #draw the fitted polynomials on the debug_image and export
+    #recast the x and y points into usable format for polylines and fillPoly
+    pts_left = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly, y_linespace]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly, y_linespace])))])
+    pts = np.hstack((pts_left, pts_right))
+    #draw lines (on the educated search debug image)
+    cv2.polylines(educated_debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    cv2.polylines(educated_debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    #save image
+    mpimg.imsave("output_images/stage3_educated_search_fitted_polynomials_straight_lines1.jpg", educated_debug_image)
     
     ######################################
     ## TEST PROJECTION BACK ON TO ROAD  ##
@@ -158,7 +189,7 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     warped_lane = np.zeros_like(warped_undistorted_test_road_image).astype(np.uint8)
 
     #draw the lane onto the warped blank image
-    cv2.fillPoly(warped_lane, np.int_([pts]), (152, 251, 152)) #(128, 128, 0)) #(0, 255, 0)
+    cv2.fillPoly(warped_lane, np.int_([pts]), (152, 251, 152))
     
     #draw fitted lines on image
     cv2.polylines(warped_lane, np.int_([pts_left]), False, color=(189,183,107), thickness=20, lineType=cv2.LINE_AA)
@@ -170,7 +201,7 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #transform perspective back to original
     warped_to_original_perspective = perform_perspective_transform(warped_lane, dest_vertices, src_vertices)
 
-    #combine the result with the original image
+    #combine (weight) the result with the original image
     projected_lane = cv2.addWeighted(undistorted_test_road_image, 1, warped_to_original_perspective, 0.3, 0)
     
     #save image

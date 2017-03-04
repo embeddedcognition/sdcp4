@@ -79,7 +79,20 @@ def perform_educated_lane_line_pixel_search(image, left_lane_line_fitted_poly, r
         #color all right lane pixels blue
         #array is row (y), col (x)
         debug_image[right_window_pixel_coordinates[:, 0], right_window_pixel_coordinates[:, 1]] = [0, 0, 255]
-        #fyi: since we color the line pixels last, the window rectangles will look like they're in back of the identified lines (in a layer below)
+        #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
+        y_linespace = np.linspace(0, (image.shape[0] - 1), image.shape[0])
+        
+        left_line_window1 = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly - window_margin, y_linespace]))])
+        left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_lane_line_fitted_poly + window_margin, y_linespace])))])
+        left_line_pts = np.hstack((left_line_window1, left_line_window2))
+        right_line_window1 = np.array([np.transpose(np.vstack([right_lane_line_fitted_poly - window_margin, y_linespace]))])
+        right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly + window_margin, y_linespace])))])
+        right_line_pts = np.hstack((right_line_window1, right_line_window2))
+
+        # Draw the lane onto the warped blank image
+        cv2.fillPoly(window_image, np.int_([left_line_pts]), (0,255, 0))
+        cv2.fillPoly(window_image, np.int_([right_line_pts]), (0,255, 0))
+        debug_image = cv2.addWeighted(debug_image, 1, window_image, 0.3, 0)
     
     #return coordinates chosen
     return (left_window_pixel_coordinates, right_window_pixel_coordinates, debug_image)

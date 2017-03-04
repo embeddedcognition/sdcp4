@@ -13,7 +13,7 @@ from moviepy.editor import VideoFileClip
 from calibration_processor import perform_undistort
 from perspective_processor import perform_perspective_transform
 from threshold_processor import perform_thresholding
-from lane_processor import perform_educated_lane_line_pixel_search, perform_lane_line_pixel_search, compute_lane_line_coefficients
+from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients
 
 #globals
 calibration_object_points = None
@@ -87,7 +87,7 @@ def process_frame(image):
     #############################
     
     #map out the left and right lane line pixel locations via windowed search
-    left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)
+    left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
@@ -124,5 +124,5 @@ def process_frame(image):
     #transform perspective back to original
     warped_to_original_perspective = perform_perspective_transform(warped_lane, dest_vertices, src_vertices)
 
-    #combine the result with the original image
+    #combine (weight) result with the original image
     return cv2.addWeighted(undistorted_image, 1, warped_to_original_perspective, 0.3, 0)
