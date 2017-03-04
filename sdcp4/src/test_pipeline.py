@@ -143,7 +143,6 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #recast the x and y points into usable format for polylines and fillPoly
     pts_left = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly, y_linespace]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly, y_linespace])))])
-    pts = np.hstack((pts_left, pts_right))
     #draw lines (on the blind search debug image)
     cv2.polylines(blind_debug_image, np.int_([pts_left]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     cv2.polylines(blind_debug_image, np.int_([pts_right]), False, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
@@ -161,9 +160,6 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
     #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
     left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
-    
-    #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
-    y_linespace = np.linspace(0, (thresholded_warped_undistorted_test_road_image.shape[0] - 1), thresholded_warped_undistorted_test_road_image.shape[0])
     
     #left lane fitted polynomial (f(y) = A(y^2) + By + C)
     left_lane_line_fitted_poly = (left_lane_line_coeff[0] * (y_linespace ** 2)) + (left_lane_line_coeff[1] * y_linespace) + left_lane_line_coeff[2]
