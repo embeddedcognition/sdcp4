@@ -20,6 +20,8 @@ calibration_object_points = None
 calibration_image_points = None
 previous_left_lane_line_coeff = None
 previous_right_lane_line_coeff = None
+previous_left_lane_fitted_poly = None
+previous_right_lane_fitted_poly = None
 #set source vertices for region mask
 src_upper_left =  (517, 478)
 src_upper_right = (762, 478)

@@ -50,8 +50,8 @@ def compute_lane_line_coefficients(left_lane_line_pixel_coordinates, right_lane_
     #return polynomial coefficients for the fitted left and right lane lines
     return (left_lane_line_coeff, right_lane_line_coeff)
 
-#map out the lane line pixel locations using previous fitted line as a starting location to mount the search from in the supplied image 
-def perform_educated_lane_line_pixel_search(image, left_lane_line_fitted_poly, right_lane_line_fitted_poly, return_debug_image=False):
+#map out the lane line pixel locations using previously computed coefficients as a starting location to mount the search from in the supplied image 
+def perform_educated_lane_line_pixel_search(image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, prev_left_lane_line_fitted_poly, prev_right_lane_line_fitted_poly, return_debug_image=False):
     #return the [y, x] coordinates (i.e., row, col format) of all hot (value of 1) pixels in the binary image
     hot_pixel_coordinates = np.transpose(np.nonzero(image))
     #set width of the window +/- margin around left and right fitted polynomials
@@ -59,10 +59,16 @@ def perform_educated_lane_line_pixel_search(image, left_lane_line_fitted_poly, r
     #if debug is set, the search windows are visualized on a returned debug image
     debug_image = None
     
-    #retrieve the [y, x] coordinates for all hot pixels located within the bounds of the current left and right windows
+    #previous left lane fitted polynomial (f(y) = A(y^2) + By + C)
+    #these are used to filter x values, not to plot with, as the y vector dimensions won't make sense (its size is equal to the number of hot pixels in the current image, not the height of the image)
+    left_lane_line_filter_poly = (prev_left_lane_line_coeff[0] * (hot_pixel_coordinates[:, 0] ** 2)) + (prev_left_lane_line_coeff[1] * hot_pixel_coordinates[:, 0]) + prev_left_lane_line_coeff[2]
+    #previous right lane fitted polynomial (f(y) = A(y^2) + By + C)
+    right_lane_line_filter_poly = (prev_right_lane_line_coeff[0] * (hot_pixel_coordinates[:, 0] ** 2)) + (prev_right_lane_line_coeff[1] * hot_pixel_coordinates[:, 0]) + prev_right_lane_line_coeff[2]
+    
+    #retrieve the [y, x] coordinates for all hot pixels located within the bounds of the current left and right windows (these bounds are a +/- margin from the previously fitted polynomial)
     #set selection conditions
-    left_window_condition = ((hot_pixel_coordinates[:, 1] > (left_lane_line_fitted_poly - window_margin)) & (hot_pixel_coordinates[:, 1] < (left_lane_line_fitted_poly + window_margin)))  
-    right_window_condition = ((hot_pixel_coordinates[:, 1] > (right_lane_line_fitted_poly - window_margin)) & (hot_pixel_coordinates[:, 1] < (right_lane_line_fitted_poly + window_margin)))
+    left_window_condition = ((hot_pixel_coordinates[:, 1] > (left_lane_line_filter_poly - window_margin)) & (hot_pixel_coordinates[:, 1] < (left_lane_line_filter_poly + window_margin)))  
+    right_window_condition = ((hot_pixel_coordinates[:, 1] > (right_lane_line_filter_poly - window_margin)) & (hot_pixel_coordinates[:, 1] < (right_lane_line_filter_poly + window_margin)))
     #resulting coordinates chosen
     left_window_pixel_coordinates = hot_pixel_coordinates[left_window_condition]
     right_window_pixel_coordinates = hot_pixel_coordinates[right_window_condition]
@@ -81,17 +87,17 @@ def perform_educated_lane_line_pixel_search(image, left_lane_line_fitted_poly, r
         debug_image[right_window_pixel_coordinates[:, 0], right_window_pixel_coordinates[:, 1]] = [0, 0, 255]
         #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
         y_linespace = np.linspace(0, (image.shape[0] - 1), image.shape[0])
-        
-        left_line_window1 = np.array([np.transpose(np.vstack([left_lane_line_fitted_poly - window_margin, y_linespace]))])
-        left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_lane_line_fitted_poly + window_margin, y_linespace])))])
-        left_line_pts = np.hstack((left_line_window1, left_line_window2))
-        right_line_window1 = np.array([np.transpose(np.vstack([right_lane_line_fitted_poly - window_margin, y_linespace]))])
-        right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_lane_line_fitted_poly + window_margin, y_linespace])))])
-        right_line_pts = np.hstack((right_line_window1, right_line_window2))
-
-        # Draw the lane onto the warped blank image
+        #recast the x and y points into usable format for fillPoly
+        left_line_left_half_window = np.array([np.transpose(np.vstack([prev_left_lane_line_fitted_poly - window_margin, y_linespace]))])
+        left_line_right_half_window = np.array([np.flipud(np.transpose(np.vstack([prev_left_lane_line_fitted_poly + window_margin, y_linespace])))])
+        right_line_left_half_window = np.array([np.transpose(np.vstack([prev_right_lane_line_fitted_poly - window_margin, y_linespace]))])
+        right_line_right_half_window = np.array([np.flipud(np.transpose(np.vstack([prev_right_lane_line_fitted_poly + window_margin, y_linespace])))])
+        left_line_pts = np.hstack((left_line_left_half_window, left_line_right_half_window))
+        right_line_pts = np.hstack((right_line_left_half_window, right_line_right_half_window))
+        #draw the search channel (+/- margin around the previously fitted polynomial)
         cv2.fillPoly(window_image, np.int_([left_line_pts]), (0,255, 0))
         cv2.fillPoly(window_image, np.int_([right_line_pts]), (0,255, 0))
+        #combine highlighted pixel debug image with highlighted window channel image
         debug_image = cv2.addWeighted(debug_image, 1, window_image, 0.3, 0)
     
     #return coordinates chosen

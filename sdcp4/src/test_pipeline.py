@@ -119,9 +119,11 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #save image
     mpimg.imsave("output_images/stage2_thresholded_warped_straight_lines1.jpg", thresholded_warped_undistorted_test_road_image_bw)
     
-    #########################################
-    ## TEST LANE DETECTION - BLIND SEARCH  ##
-    #########################################
+    #########################
+    ## TEST LANE DETECTION ##
+    #########################
+    
+    ## BLIND SEARCH ##
     
     #map out the left and right lane line pixel coordinates via windowed search
     left_lane_pixel_coordinates, right_lane_pixel_coordinates, blind_debug_image = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, return_debug_image=True)
@@ -149,12 +151,10 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #save image
     mpimg.imsave("output_images/stage3_blind_search_fitted_polynomials_straight_lines1.jpg", blind_debug_image)
     
-    ############################################
-    ## TEST LANE DETECTION - EDUCATED SEARCH  ##
-    ############################################
+    ## EDUCATED SEARCH ##
     
     #map out the left and right lane line pixel coordinates via windowed search
-    left_lane_pixel_coordinates, right_lane_pixel_coordinates, educated_debug_image = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, left_lane_line_fitted_poly, right_lane_line_fitted_poly, return_debug_image=False)
+    left_lane_pixel_coordinates, right_lane_pixel_coordinates, educated_debug_image = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_test_road_image, left_lane_line_coeff, right_lane_line_coeff, left_lane_line_fitted_poly, right_lane_line_fitted_poly, return_debug_image=True)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
