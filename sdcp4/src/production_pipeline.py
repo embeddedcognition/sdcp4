@@ -88,6 +88,8 @@ def process_frame(image):
     ## PERFORM LANE DETECTION  ##
     #############################
     
+    #if we have previous polynomials, use them as a starting place for educated search
+    
     #map out the left and right lane line pixel locations via windowed search
     left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)
     
@@ -95,6 +97,8 @@ def process_frame(image):
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
     #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
     left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
+    
+    #if the deviation between the current coefficients and the previous ones is > 5%, use previous
     
     #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
     y_linespace = np.linspace(0, (thresholded_warped_undistorted_image.shape[0] - 1), thresholded_warped_undistorted_image.shape[0])

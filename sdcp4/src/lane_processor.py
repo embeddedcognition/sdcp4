@@ -50,6 +50,35 @@ def compute_lane_line_coefficients(left_lane_line_pixel_coordinates, right_lane_
     #return polynomial coefficients for the fitted left and right lane lines
     return (left_lane_line_coeff, right_lane_line_coeff)
 
+#compute the radius of curvature of the fitted lines in real world space (meters)
+def compute_curvature_of_lane_lines(image, left_lane_line_fitted_poly, right_lane_line_fitted_poly):
+    #define conversions in x and y from pixels space to meters
+    y_meters_per_pixel = 30 / 720 #meters per pixel in y dimension
+    x_meters_per_pixel = 3.7 / 700 #meters per pixel in x dimension
+    #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
+    y_linespace = np.linspace(0, (image.shape[0] - 1), image.shape[0])
+
+    #left lane fitted polynomial (f(y) = A(y^2) + By + C)
+    #left_lane_line_fitted_poly = (left_lane_line_coeff[0] * (y_linespace ** 2)) + (left_lane_line_coeff[1] * y_linespace) + left_lane_line_coeff[2]
+    #right lane fitted polynomial (f(y) = A(y^2) + By + C)
+    #right_lane_line_fitted_poly = (right_lane_line_coeff[0] * (y_linespace ** 2)) + (right_lane_line_coeff[1] * y_linespace) + right_lane_line_coeff[2]
+
+    #fit new polynomials to x, y in world space
+    left_lane_line_coeff_rescaled = np.polyfit((y_linespace * y_meters_per_pixel), (left_lane_line_fitted_poly * x_meters_per_pixel), deg=2)
+    right_lane_line_coeff_rescaled = np.polyfit((y_linespace * y_meters_per_pixel), (right_lane_line_fitted_poly * x_meters_per_pixel), deg=2)
+    
+    #calculate the new radii of curvature
+    
+    left_curverad = ((1 + (2 * left_lane_line_coeff_rescaled[0] * np.max(y_linespace) * y_meters_per_pixel + left_lane_line_coeff_rescaled[1]) ** 2) ** 1.5) / np.absolute(2 * left_lane_line_coeff_rescaled[0])
+    right_curverad = ((1 + (2 * right_lane_line_coeff_rescaled[0] * np.max(y_linespace) * y_meters_per_pixel + right_lane_line_coeff_rescaled[1]) ** 2) ** 1.5) / np.absolute(2 * right_lane_line_coeff_rescaled[0])
+    
+    #print(left_lane_line_coeff_rescaled)
+    #print(right_lane_line_coeff_rescaled)
+    #print(left_curverad)
+    #print(right_curverad)
+    
+    return (left_curverad, right_curverad)
+    
 #map out the lane line pixel locations using previously computed coefficients as a starting location to mount the search from in the supplied image 
 def perform_educated_lane_line_pixel_search(image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, prev_left_lane_line_fitted_poly, prev_right_lane_line_fitted_poly, return_debug_image=False):
     #return the [y, x] coordinates (i.e., row, col format) of all hot (value of 1) pixels in the binary image

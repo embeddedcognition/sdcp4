@@ -36,5 +36,5 @@ execute_test_pipeline(calibration_object_points, calibration_image_points)
 ######################
 
 #execute the pipeline - producing a video  
-#execute_production_pipeline(calibration_object_points, calibration_image_points)
+execute_production_pipeline(calibration_object_points, calibration_image_points)
 
