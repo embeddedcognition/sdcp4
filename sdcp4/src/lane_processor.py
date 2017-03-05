@@ -52,16 +52,18 @@ def compute_lane_line_coefficients(left_lane_line_pixel_coordinates, right_lane_
 
 #compute the offset of the vehicle in the lane in meters
 def compute_vehicle_offset(image_size, left_lane_line_coeff, right_lane_line_coeff):
-    x_meters_per_pixel = 3.7 / 700 #meters per pixel in x dimension
-    #find the x value of the fitted left and right lane polynomials at their base (i.e., at the height of image - 720 - remember image grows down) using the supplied coefficients
+    standard_lane_width = 3.7 #standard width between the left and right lane line 
+    #evaluate the x value of the fitted left and right lane polynomials at their base (i.e., at the height of image - 720 - remember image grows down) using the supplied coefficients
     left_lane_line_base = (left_lane_line_coeff[0] * (image_size[0] ** 2)) + (left_lane_line_coeff[1] * image_size[0]) + left_lane_line_coeff[2]
     right_lane_line_base = (right_lane_line_coeff[0] * (image_size[0] ** 2)) + (right_lane_line_coeff[1] * image_size[0]) + right_lane_line_coeff[2]
     #calculate the lane center (midpoint between base of calcualted left and right lane line)
     lane_center = np.mean([left_lane_line_base, right_lane_line_base])
     #calculate the image center
     image_center = np.int(image_size[1] / 2)
+    #compute meters per pixel scaling factor (x-axis)
+    meters_per_pixel = standard_lane_width / np.abs(left_lane_line_base - right_lane_line_base)
     #return calculated offset (in meters)
-    return ((image_center - lane_center) * x_meters_per_pixel)
+    return ((image_center - lane_center) * meters_per_pixel)
 
 #compute the radius of curvature of the fitted lines in real world space (meters)
 def compute_curvature_of_lane_lines(image_size, left_lane_line_fitted_poly, right_lane_line_fitted_poly):
@@ -70,7 +72,7 @@ def compute_curvature_of_lane_lines(image_size, left_lane_line_fitted_poly, righ
     x_meters_per_pixel = 3.7 / 700 #meters per pixel in x dimension
     #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
     y_linespace = np.linspace(0, (image_size[0] - 1), image_size[0])
-    #fit new polynomials to x, y in world space
+    #fit new polynomials (using polys fit to pixel space) to x, y in world space
     left_lane_line_coeff_rescaled = np.polyfit((y_linespace * y_meters_per_pixel), (left_lane_line_fitted_poly * x_meters_per_pixel), deg=2)
     right_lane_line_coeff_rescaled = np.polyfit((y_linespace * y_meters_per_pixel), (right_lane_line_fitted_poly * x_meters_per_pixel), deg=2)
     #calculate the new radii of curvature    

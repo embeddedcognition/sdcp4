@@ -141,9 +141,8 @@ def process_frame(image):
 
     #add tracking text
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(projected_lane, 'Left line curvature: {0:.2f} meters'.format(left_curvature), (10, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(projected_lane, 'Right line curvature: {0:.2f} meters'.format(right_curvature), (10, 100), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(projected_lane, 'Vehicle offset: {0:.2f} meters'.format(vehicle_offset), (10, 150), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(projected_lane, 'Lane curvature: {0:.2f} meters'.format(np.mean([left_curvature, right_curvature])), (20, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(projected_lane, 'Vehicle offset: {0:.2f} meters'.format(vehicle_offset), (20, 100), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
     #return processed frame for inclusion in processed video    
     return projected_lane 
