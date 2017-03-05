@@ -13,7 +13,7 @@ from moviepy.editor import VideoFileClip
 from calibration_processor import perform_undistort
 from perspective_processor import perform_perspective_transform
 from threshold_processor import perform_thresholding
-from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients
+from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients, compute_curvature_of_lane_lines, compute_vehicle_offset
 
 #globals
 calibration_object_points = None
@@ -108,6 +108,12 @@ def process_frame(image):
     #right lane fitted polynomial (f(y) = A(y^2) + By + C)
     right_lane_line_fitted_poly = (right_lane_line_coeff[0] * (y_linespace ** 2)) + (right_lane_line_coeff[1] * y_linespace) + right_lane_line_coeff[2]
     
+    ## compute lane curvature ##
+    left_curvature, right_curvature = compute_curvature_of_lane_lines(thresholded_warped_undistorted_image.shape, left_lane_line_fitted_poly, right_lane_line_fitted_poly)
+    
+    ## compute vehicle offset from center ##
+    vehicle_offset = compute_vehicle_offset(thresholded_warped_undistorted_image.shape, left_lane_line_coeff, right_lane_line_coeff)
+    
     #########################################
     ## PERFORM PROJECTION BACK ON TO ROAD  ##
     #########################################
@@ -131,4 +137,13 @@ def process_frame(image):
     warped_to_original_perspective = perform_perspective_transform(warped_lane, dest_vertices, src_vertices)
 
     #combine (weight) result with the original image
-    return cv2.addWeighted(undistorted_image, 1, warped_to_original_perspective, 0.3, 0)
+    projected_lane = cv2.addWeighted(undistorted_image, 1, warped_to_original_perspective, 0.3, 0)
+
+    #add tracking text
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(projected_lane, 'Left line curvature: {0:.2f} meters'.format(left_curvature), (10, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(projected_lane, 'Right line curvature: {0:.2f} meters'.format(right_curvature), (10, 100), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(projected_lane, 'Vehicle offset: {0:.2f} meters'.format(vehicle_offset), (10, 150), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+    #return processed frame for inclusion in processed video    
+    return projected_lane 
