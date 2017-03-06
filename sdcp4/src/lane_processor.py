@@ -82,7 +82,7 @@ def compute_curvature_of_lane_lines(image_size, left_lane_line_fitted_poly, righ
     return (radius_of_curvature_left, radius_of_curvature_right)
     
 #map out the lane line pixel locations using previously computed coefficients as a starting location to mount the search from in the supplied image 
-def perform_educated_lane_line_pixel_search(image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, prev_left_lane_line_fitted_poly, prev_right_lane_line_fitted_poly, return_debug_image=False):
+def perform_educated_lane_line_pixel_search(image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, prev_left_lane_line_fitted_poly=None, prev_right_lane_line_fitted_poly=None, return_debug_image=False):
     #return the [y, x] coordinates (i.e., row, col format) of all hot (value of 1) pixels in the binary image
     hot_pixel_coordinates = np.transpose(np.nonzero(image))
     #set width of the window +/- margin around left and right fitted polynomials

@@ -18,10 +18,10 @@ from lane_processor import perform_educated_lane_line_pixel_search, perform_blin
 #globals
 calibration_object_points = None
 calibration_image_points = None
-previous_left_lane_line_coeff = None
-previous_right_lane_line_coeff = None
-previous_left_lane_fitted_poly = None
-previous_right_lane_fitted_poly = None
+prev_left_lane_line_coeff = None
+prev_right_lane_line_coeff = None
+prev_left_lane_fitted_poly = None
+prev_vehicle_offset = None
 #set source vertices for region mask
 src_upper_left =  (517, 478)
 src_upper_right = (762, 478)
@@ -47,7 +47,7 @@ dest_vertices = np.float32(
 
 #run the pipeline on the provided video
 def execute_production_pipeline(my_calibration_object_points, my_calibration_image_points):
-    #leverage globals
+    #establish ability to set globals
     global calibration_object_points
     global calibration_image_points
     #set globals
@@ -60,6 +60,10 @@ def execute_production_pipeline(my_calibration_object_points, my_calibration_ima
 
 #process a frame of video
 def process_frame(image):
+    
+    #establish ability to set globals
+    global prev_left_lane_line_coeff
+    global prev_right_lane_line_coeff
     
     ###################################
     ## PERFORM DISTORTION CORRECTION ##
@@ -88,17 +92,31 @@ def process_frame(image):
     ## PERFORM LANE DETECTION  ##
     #############################
     
-    #if we have previous polynomials, use them as a starting place for educated search
-    
-    #map out the left and right lane line pixel locations via windowed search
-    left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)
+    #if this is the very first frame, we much do a blind search for the lane lines
+    if ((prev_left_lane_line_coeff is None) and (prev_right_lane_line_coeff is None)):
+        #map out the left and right lane line pixel locations via windowed search
+        left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)    
+    else:
+        #if we have previous coefficients, use them as a starting place to accelerate our lane search for this frame
+        #map out the left and right lane line pixel coordinates via windowed search
+        left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, None, None, return_debug_image=False)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
     #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
     left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
     
-    #if the deviation between the current coefficients and the previous ones is > 5%, use previous
+    #check percentage change between current and previous coefficients (if the change exceeds 5%, use the previous coefficients)
+    if ((prev_left_lane_line_coeff is not None) and (prev_right_lane_line_coeff is not None)):
+        percent_difference = np.abs(left_lane_line_coeff - prev_left_lane_line_coeff) / np.mean([left_lane_line_coeff, prev_left_lane_line_coeff])
+        #if any of the coefficients have a greater than 5% change, use the previous coefficients
+        if (np.any(percent_difference > 5)):
+            left_lane_line_coeff = prev_left_lane_line_coeff
+            right_lane_line_coeff = prev_right_lane_line_coeff
+            
+    #keep these values for use on the next frame
+    prev_left_lane_line_coeff = left_lane_line_coeff
+    prev_right_lane_line_coeff = right_lane_line_coeff
     
     #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
     y_linespace = np.linspace(0, (thresholded_warped_undistorted_image.shape[0] - 1), thresholded_warped_undistorted_image.shape[0])
