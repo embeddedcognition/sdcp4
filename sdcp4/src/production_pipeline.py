@@ -20,8 +20,6 @@ calibration_object_points = None
 calibration_image_points = None
 prev_left_lane_line_coeff = None
 prev_right_lane_line_coeff = None
-prev_left_lane_fitted_poly = None
-prev_vehicle_offset = None
 #set source vertices for region mask
 src_upper_left =  (517, 478)
 src_upper_right = (762, 478)
@@ -92,13 +90,13 @@ def process_frame(image):
     ## PERFORM LANE DETECTION  ##
     #############################
     
-    #if this is the very first frame, we much do a blind search for the lane lines
+    #if this is the very first frame, we must do a blind search for the lane lines
     if ((prev_left_lane_line_coeff is None) and (prev_right_lane_line_coeff is None)):
         #map out the left and right lane line pixel locations via windowed search
         left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)    
     else:
         #if we have previous coefficients, use them as a starting place to accelerate our lane search for this frame
-        #map out the left and right lane line pixel coordinates via windowed search
+        #map out the left and right lane line pixel coordinates via windowed search using previous polynomials as starting place
         left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, None, None, return_debug_image=False)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
@@ -106,15 +104,16 @@ def process_frame(image):
     #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
     left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
     
-    #check percentage change between current and previous coefficients (if the change exceeds 5%, use the previous coefficients)
+    #if we have previous left and right lane coefficients stored
     if ((prev_left_lane_line_coeff is not None) and (prev_right_lane_line_coeff is not None)):
+        #compute the percentage difference between the current and previous coefficients (if the difference exceeds 5%, use the previous coefficients)
         percent_difference = np.abs(left_lane_line_coeff - prev_left_lane_line_coeff) / np.mean([left_lane_line_coeff, prev_left_lane_line_coeff])
-        #if any of the coefficients have a greater than 5% change, use the previous coefficients
+        #if the percent difference between any of the coefficients sets exceeds 5%, use the complete set of previous coefficients
         if (np.any(percent_difference > 5)):
             left_lane_line_coeff = prev_left_lane_line_coeff
             right_lane_line_coeff = prev_right_lane_line_coeff
             
-    #keep these values for use on the next frame
+    #keep the current coefficients for use on the next frame
     prev_left_lane_line_coeff = left_lane_line_coeff
     prev_right_lane_line_coeff = right_lane_line_coeff
     

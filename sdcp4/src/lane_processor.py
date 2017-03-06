@@ -78,7 +78,7 @@ def compute_curvature_of_lane_lines(image_size, left_lane_line_fitted_poly, righ
     #calculate the new radii of curvature    
     radius_of_curvature_left = ((1 + (2 * left_lane_line_coeff_rescaled[0] * np.max(y_linespace) * y_meters_per_pixel + left_lane_line_coeff_rescaled[1]) ** 2) ** 1.5) / np.absolute(2 * left_lane_line_coeff_rescaled[0])
     radius_of_curvature_right = ((1 + (2 * right_lane_line_coeff_rescaled[0] * np.max(y_linespace) * y_meters_per_pixel + right_lane_line_coeff_rescaled[1]) ** 2) ** 1.5) / np.absolute(2 * right_lane_line_coeff_rescaled[0])
-    #return curvature of 
+    #return curvature of left and right lane lines
     return (radius_of_curvature_left, radius_of_curvature_right)
     
 #map out the lane line pixel locations using previously computed coefficients as a starting location to mount the search from in the supplied image 

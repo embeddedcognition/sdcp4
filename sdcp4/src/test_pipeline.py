@@ -33,7 +33,6 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #test camera calibration by undistorting a test road image
     #load image
     test_road_image = mpimg.imread("test_images/straight_lines1.jpg")
-    #test_road_image = mpimg.imread("test_images/test0.jpg")
     #undistort image - this undistorted image will be used to demonstrate the production_pipeline along the way (all outputs will be placed in 'output_images' folder)
     undistorted_test_road_image = perform_undistort(test_road_image, calibration_object_points, calibration_image_points)
     #save image
