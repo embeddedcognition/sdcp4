@@ -9,6 +9,7 @@
 #############
 import cv2
 import numpy as np
+from collections import deque
 from moviepy.editor import VideoFileClip
 from calibration_processor import perform_undistort
 from perspective_processor import perform_perspective_transform
@@ -18,24 +19,24 @@ from lane_processor import perform_educated_lane_line_pixel_search, perform_blin
 #globals
 calibration_object_points = None
 calibration_image_points = None
-prev_left_lane_line_coeff = None
-prev_right_lane_line_coeff = None
+prev_left_lane_line_coeff_queue = None
+prev_right_lane_line_coeff_queue = None
 #set source vertices for region mask
 src_upper_left =  (517, 478)
 src_upper_right = (762, 478)
 src_lower_left = (0, 720)
 src_lower_right = (1280, 720)
+#set destination vertices (for perspective transform)
+dest_upper_left = (0, 0)
+dest_upper_right = (1280, 0)
+dest_lower_left = (0, 720)
+dest_lower_right = (1280, 720)
 #package source vertices (points)
 src_vertices = np.float32(
     [src_upper_left,
      src_lower_left,
      src_lower_right,
      src_upper_right])
-#set destination vertices (for perspective transform)
-dest_upper_left = (0, 0)
-dest_upper_right = (1280, 0)
-dest_lower_left = (0, 720)
-dest_lower_right = (1280, 720)
 #package destination vertices (points)
 dest_vertices = np.float32(
     [dest_upper_left,
@@ -48,9 +49,14 @@ def execute_production_pipeline(my_calibration_object_points, my_calibration_ima
     #establish ability to set globals
     global calibration_object_points
     global calibration_image_points
+    global prev_left_lane_line_coeff_queue
+    global prev_right_lane_line_coeff_queue
     #set globals
     calibration_object_points = my_calibration_object_points
     calibration_image_points= my_calibration_image_points
+    #initialize queues (storing a max of 10 sets of polynomial coefficients for both the left and right lanes
+    prev_left_lane_line_coeff_queue = deque(maxlen=10)
+    prev_right_lane_line_coeff_queue = deque(maxlen=10)
     #generate video
     clip_handle = VideoFileClip("test_video/project_video.mp4")
     image_handle = clip_handle.fl_image(process_frame)
@@ -58,10 +64,6 @@ def execute_production_pipeline(my_calibration_object_points, my_calibration_ima
 
 #process a frame of video
 def process_frame(image):
-    
-    #establish ability to set globals
-    global prev_left_lane_line_coeff
-    global prev_right_lane_line_coeff
     
     ###################################
     ## PERFORM DISTORTION CORRECTION ##
@@ -91,31 +93,38 @@ def process_frame(image):
     #############################
     
     #if this is the very first frame, we must do a blind search for the lane lines
-    if ((prev_left_lane_line_coeff is None) and (prev_right_lane_line_coeff is None)):
+    if ((len(prev_left_lane_line_coeff_queue) == 0) and (len(prev_right_lane_line_coeff_queue) == 0)):
         #map out the left and right lane line pixel locations via windowed search
         left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_blind_lane_line_pixel_search(thresholded_warped_undistorted_image, return_debug_image=False)    
     else:
-        #if we have previous coefficients, use them as a starting place to accelerate our lane search for this frame
+        #if we have previous coefficients in the queues, use the latest (rightmost) set as a starting place to accelerate our lane search for this frame
         #map out the left and right lane line pixel coordinates via windowed search using previous polynomials as starting place
-        left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_image, prev_left_lane_line_coeff, prev_right_lane_line_coeff, None, None, return_debug_image=False)
+        left_lane_pixel_coordinates, right_lane_pixel_coordinates, _ = perform_educated_lane_line_pixel_search(thresholded_warped_undistorted_image, prev_left_lane_line_coeff_queue[-1], prev_right_lane_line_coeff_queue[-1], None, None, return_debug_image=False)
     
     #compute the polynomial coefficients for each lane line using the x and y pixel locations from the mapping function
     #we're fitting (computing coefficients of) a second order polynomial: f(y) = A(y^2) + By + C
     #we're fitting for f(y) rather than f(x), as the lane lines in the warped image are near vertical and may have the same x value for more than one y value 
     left_lane_line_coeff, right_lane_line_coeff = compute_lane_line_coefficients(left_lane_pixel_coordinates, right_lane_pixel_coordinates)
     
-    #if we have previous left and right lane coefficients stored
-    if ((prev_left_lane_line_coeff is not None) and (prev_right_lane_line_coeff is not None)):
-        #compute the percentage difference between the current and previous coefficients (if the difference exceeds 5%, use the previous coefficients)
-        percent_difference = np.abs(left_lane_line_coeff - prev_left_lane_line_coeff) / np.mean([left_lane_line_coeff, prev_left_lane_line_coeff])
-        #if the percent difference between any of the coefficients sets exceeds 5%, use the complete set of previous coefficients
-        if (np.any(percent_difference > 5)):
-            left_lane_line_coeff = prev_left_lane_line_coeff
-            right_lane_line_coeff = prev_right_lane_line_coeff
+    #if we have at least one set of previous left and right lane coefficients stored in the queues
+    if ((len(prev_left_lane_line_coeff_queue) > 0) and (len(prev_right_lane_line_coeff_queue) > 0)):
+        #compute the percentage difference between the current left and right coefficients sets and latest (rightmost) set of coefficients in each queue 
+        left_percent_difference = np.abs(left_lane_line_coeff - prev_left_lane_line_coeff_queue[-1]) / np.mean([left_lane_line_coeff, prev_left_lane_line_coeff_queue[-1]])
+        right_percent_difference = np.abs(right_lane_line_coeff - prev_right_lane_line_coeff_queue[-1]) / np.mean([left_lane_line_coeff, prev_right_lane_line_coeff_queue[-1]])
+        #if the percent difference between any of the coefficients exceeds 3%, use the latest (rightmost) set of previous coefficients in the queue for each lane line (last added to the queue)
+        if (np.any(left_percent_difference > 3) or np.any(right_percent_difference > 3)):
+            #pop off the newest (rightmost) set of coefficients from the queue
+            left_lane_line_coeff = prev_left_lane_line_coeff_queue.pop()
+            right_lane_line_coeff = prev_right_lane_line_coeff_queue.pop()
             
-    #keep the current coefficients for use on the next frame
-    prev_left_lane_line_coeff = left_lane_line_coeff
-    prev_right_lane_line_coeff = right_lane_line_coeff
+    #append the current coefficients to the queue for use on the next frame
+    #the queue will automatically pop off the oldest set of coefficients from each queue if maxlength is reach (that way we only keep 10 sets at all time)
+    prev_left_lane_line_coeff_queue.append(left_lane_line_coeff)
+    prev_right_lane_line_coeff_queue.append(right_lane_line_coeff)
+    
+    #smooth the lines (trading off line accuracy for reduced jitter) by taking the mean of the sets of coefficients currently in the queue
+    left_lane_line_coeff = np.mean(prev_left_lane_line_coeff_queue, axis=0)
+    right_lane_line_coeff = np.mean(prev_right_lane_line_coeff_queue, axis=0)
     
     #generate range of evenly spaced numbers over y interval (0 - 719) matching image height
     y_linespace = np.linspace(0, (thresholded_warped_undistorted_image.shape[0] - 1), thresholded_warped_undistorted_image.shape[0])

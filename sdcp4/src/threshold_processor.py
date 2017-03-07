@@ -100,8 +100,8 @@ def perform_thresholding(image):
     l_binary = apply_l_channel_gradient_thresholding(l)
     #perform s-channel gradient and value thresholding and return binary image
     s_binary = apply_s_channel_gradient_and_value_thresholding(s)
-    #compute the hot pixel density score for the s_bianry image (build resiliency against degraded image due to difficult frame)
-    #get the count of non-zero pixels in the image (i.e., how may 1's are there) - just counting the number of y-coordinates returned 
+    #compute the hot pixel density score for the s_binary image (build resiliency against degraded image due to difficult frame)
+    #get the count of non-zero pixels in the image (i.e., how many 1's are there) - just counting the number of y-coordinates returned 
     #(could have also counted just the x-coordinates)
     s_binary_hot_pixel_count = len((s_binary.nonzero())[0])
     #density score is the number of positive (hot) pixels in the image divided by the total number of pixels in the image
