@@ -17,43 +17,21 @@ from threshold_processor import perform_thresholding
 from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients, compute_curvature_of_lane_lines, compute_vehicle_offset
 
 #globals
-calibration_object_points = None
-calibration_image_points = None
+calibration_components = None
+perspective_transform_components = None #perspective_transform_components[0] is warp_perspective_matrix, perspective_transform_components[1] is unwarp_perspective_matrix
 prev_left_lane_line_coeff_queue = None
 prev_right_lane_line_coeff_queue = None
-#set source vertices for region mask
-src_upper_left =  (517, 478)
-src_upper_right = (762, 478)
-src_lower_left = (0, 720)
-src_lower_right = (1280, 720)
-#set destination vertices (for perspective transform)
-dest_upper_left = (0, 0)
-dest_upper_right = (1280, 0)
-dest_lower_left = (0, 720)
-dest_lower_right = (1280, 720)
-#package source vertices (points)
-src_vertices = np.float32(
-    [src_upper_left,
-     src_lower_left,
-     src_lower_right,
-     src_upper_right])
-#package destination vertices (points)
-dest_vertices = np.float32(
-    [dest_upper_left,
-     dest_lower_left,
-     dest_lower_right,
-     dest_upper_right])
 
 #run the pipeline on the provided video
-def execute_production_pipeline(my_calibration_object_points, my_calibration_image_points):
+def execute_production_pipeline(my_calibration_components, my_perspective_transform_components):
     #establish ability to set globals
-    global calibration_object_points
-    global calibration_image_points
+    global calibration_components
+    global perspective_transform_components
     global prev_left_lane_line_coeff_queue
     global prev_right_lane_line_coeff_queue
     #set globals
-    calibration_object_points = my_calibration_object_points
-    calibration_image_points= my_calibration_image_points
+    calibration_components = my_calibration_components
+    perspective_transform_components= my_perspective_transform_components
     #initialize queues (storing a max of 10 sets of polynomial coefficients for both the left and right lanes
     prev_left_lane_line_coeff_queue = deque(maxlen=10)
     prev_right_lane_line_coeff_queue = deque(maxlen=10)
@@ -70,7 +48,7 @@ def process_frame(image):
     ###################################
     
     #undistort image
-    undistorted_image = perform_undistort(image, calibration_object_points, calibration_image_points)
+    undistorted_image = perform_undistort(image, calibration_components)
     
     ###################################
     ## PERFORM PERSPECTIVE TRANSFORM ##
@@ -79,7 +57,7 @@ def process_frame(image):
     #transform perspective (warp) - this will squish the depth of field in the source mapping into the height of the image, 
     #which will make the upper 3/4ths blurry, need to adjust dest_upper* y-values to negative to stretch it out and clear the transformed image up
     #we won't do that as we'll lose right dashes in the 720 pix height of the image frame 
-    warped_undistorted_image = perform_perspective_transform(undistorted_image, src_vertices, dest_vertices)
+    warped_undistorted_image = perform_perspective_transform(undistorted_image, perspective_transform_components[0])
     
     #######################################
     ## PERFORM COLOR/GRADIENT THRESHOLD  ##
@@ -160,7 +138,7 @@ def process_frame(image):
     cv2.polylines(warped_lane, np.int_([pts_right]), False, color=(189,183,107), thickness=20, lineType=cv2.LINE_AA)
 
     #transform perspective back to original
-    warped_to_original_perspective = perform_perspective_transform(warped_lane, dest_vertices, src_vertices)
+    warped_to_original_perspective = perform_perspective_transform(warped_lane, perspective_transform_components[1])
 
     #combine (weight) result with the original image
     projected_lane = cv2.addWeighted(undistorted_image, 1, warped_to_original_perspective, 0.3, 0)

@@ -9,9 +9,16 @@
 #############
 import cv2
 
+#generate a tuple containing the perspective matricies to warp and unwarp
+def generate_perspective_transform_components(src_vertices, dest_vertices):
+    #get perspective matrix based on source --> destination point mapping (warp)
+    warp_perspective_matrix = cv2.getPerspectiveTransform(src_vertices, dest_vertices)
+    #get perspective matrix based on destination --> source point mapping (unwarp)
+    unwarp_perspective_matrix = cv2.getPerspectiveTransform(dest_vertices, src_vertices)
+    #return perspective matrices
+    return (warp_perspective_matrix, unwarp_perspective_matrix)
+    
 #transform the perspective of the supplied undistorted image
-def perform_perspective_transform(undistorted_image, src_points, dest_points):
-    #get perspective matrix based on source and destination point mapping
-    perspective_matrix = cv2.getPerspectiveTransform(src_points, dest_points)
-    #warp image to destination perspective
-    return cv2.warpPerspective(undistorted_image, perspective_matrix, (undistorted_image.shape[1], undistorted_image.shape[0]), flags=cv2.INTER_LINEAR)
+def perform_perspective_transform(image, perspective_matrix):
+    #warp or unwarp based on perspective matrix supplied
+    return cv2.warpPerspective(image, perspective_matrix, (image.shape[1], image.shape[0]), flags=cv2.INTER_LINEAR)

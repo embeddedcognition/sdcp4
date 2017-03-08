@@ -12,9 +12,9 @@ import matplotlib.image as mpimg
 import glob
 import cv2
 
-#generate calibration image and object points based on supplied (chessboard) calibration images
+#generate calibration camera matrix and distortion coefficients based on supplied (chessboard) calibration images
 #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
-def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images): 
+def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images, camera_image_size): 
     #lists to store object/image points for all calibration images
     calibration_object_points = [] #3d points in real world space
     calibration_image_points = []  #2d points on the image plane
@@ -37,16 +37,14 @@ def generate_calibration_components(num_column_points, num_row_points, path_to_c
             calibration_image_points.append(corners)
             #add associated objects points for this calibrations image (same for all calibration images)
             calibration_object_points.append(calibration_object_points_template)
-    #return lists
-    return (calibration_object_points, calibration_image_points)
-
-#transform an image to compensate for radial and tangential lens distortion
-#based on points taken from previous calibration images taken with the same camera 
-def perform_undistort(image, calibration_object_points, calibration_image_points):
-    #get image size in (x, y)
-    image_size = (image.shape[1], image.shape[0])
     #derive camera matrix (needed to transform 3d object points to 2d image points) and distortion coefficients
     #based on image and object points derived from calibration images taken on that same camera
-    _, camera_matrix, distortion_coeff, _, _ = cv2.calibrateCamera(calibration_object_points, calibration_image_points, image_size, None, None)
+    _, camera_matrix, distortion_coeff, _, _ = cv2.calibrateCamera(calibration_object_points, calibration_image_points, camera_image_size, None, None)
+    #return components
+    return (camera_matrix, distortion_coeff)
+
+#transform an image to compensate for radial and tangential lens distortion
+#calibration_components[0] is camera_matrix, calibration_components[1] is distortion_coeff 
+def perform_undistort(image, calibration_components):
     #return the undistorted image
-    return cv2.undistort(image, camera_matrix, distortion_coeff)
+    return cv2.undistort(image, calibration_components[0], calibration_components[1])

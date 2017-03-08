@@ -16,7 +16,8 @@ from threshold_processor import perform_thresholding
 from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients, compute_curvature_of_lane_lines, compute_vehicle_offset
 
 #test the pipeline components and produce outputs in the 'output_images' folder
-def execute_test_pipeline(calibration_object_points, calibration_image_points):
+#perspective_transform_components[0] is warp_perspective_matrix, perspective_transform_components[1] is unwarp_perspective_matrix
+def execute_test_pipeline(calibration_components, perspective_transform_components, src_vertices):
     
     #############################
     ## TEST CAMERA CALIBRATION ##
@@ -26,7 +27,7 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #load image
     test_chessboard_image = mpimg.imread("camera_cal/calibration1.jpg")
     #undistort image
-    undistorted_test_chessboard_image = perform_undistort(test_chessboard_image, calibration_object_points, calibration_image_points)
+    undistorted_test_chessboard_image = perform_undistort(test_chessboard_image, calibration_components)
     #save image
     mpimg.imsave("output_images/stage0_undistorted_calibration1.jpg", undistorted_test_chessboard_image)
 
@@ -34,7 +35,7 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     #load image
     test_road_image = mpimg.imread("test_images/straight_lines1.jpg")
     #undistort image - this undistorted image will be used to demonstrate the production_pipeline along the way (all outputs will be placed in 'output_images' folder)
-    undistorted_test_road_image = perform_undistort(test_road_image, calibration_object_points, calibration_image_points)
+    undistorted_test_road_image = perform_undistort(test_road_image, calibration_components)
     #save image
     mpimg.imsave("output_images/stage0_undistorted_straight_lines1.jpg", undistorted_test_road_image)
 
@@ -46,45 +47,19 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     line_color = [255, 0, 0] #red
     line_thickness = 3
 
-    #set source vertices for region mask
-    src_upper_left =  (517, 478)
-    src_upper_right = (762, 478)
-    src_lower_left = (0, 720)
-    src_lower_right = (1280, 720)
-
-    #package source vertices (points)
-    src_vertices = np.float32(
-        [src_upper_left,
-         src_lower_left,
-         src_lower_right,
-         src_upper_right])
-
     #draw lines on test road image to display source vertices 
     src_vertices_image = undistorted_test_road_image.copy() #copy as not to affect original image
-    cv2.line(src_vertices_image, src_upper_left, src_upper_right, line_color, line_thickness)
-    cv2.line(src_vertices_image, src_upper_left, src_lower_left, line_color, line_thickness)
-    cv2.line(src_vertices_image, src_upper_right, src_lower_right, line_color, line_thickness)
-    cv2.line(src_vertices_image, src_lower_left, src_lower_right, line_color, line_thickness)
+    cv2.line(src_vertices_image, src_vertices[0], src_vertices[3], line_color, line_thickness)
+    cv2.line(src_vertices_image, src_vertices[0], src_vertices[1], line_color, line_thickness)
+    cv2.line(src_vertices_image, src_vertices[3], src_vertices[2], line_color, line_thickness)
+    cv2.line(src_vertices_image, src_vertices[1], src_vertices[2], line_color, line_thickness)
     #save image
     mpimg.imsave("output_images/stage1_src_vertices_straight_lines1.jpg", src_vertices_image)
-
-    #set destination vertices (for perspective transform)
-    dest_upper_left = (0, 0)
-    dest_upper_right = (1280, 0)
-    dest_lower_left = (0, 720)
-    dest_lower_right = (1280, 720)
-
-    #package destination vertices (points)
-    dest_vertices = np.float32(
-        [dest_upper_left,
-         dest_lower_left,
-         dest_lower_right,
-         dest_upper_right])
 
     #transform perspective (warp) - this will squish the depth of field in the source mapping into the height of the image, 
     #which will make the upper 3/4ths blurry, need to adjust dest_upper* y-values to negative to stretch it out and clear the transformed image up
     #we won't do that as we'll lose right dashes in the 720 pix height of the image frame 
-    warped_undistorted_test_road_image = perform_perspective_transform(undistorted_test_road_image, src_vertices, dest_vertices)
+    warped_undistorted_test_road_image = perform_perspective_transform(undistorted_test_road_image, perspective_transform_components[0])
     #save image
     mpimg.imsave("output_images/stage1_warped_straight_lines1.jpg", warped_undistorted_test_road_image)
 
@@ -200,7 +175,7 @@ def execute_test_pipeline(calibration_object_points, calibration_image_points):
     mpimg.imsave("output_images/stage4_warped_lane_straight_lines1.jpg", warped_lane)
 
     #transform perspective back to original
-    warped_to_original_perspective = perform_perspective_transform(warped_lane, dest_vertices, src_vertices)
+    warped_to_original_perspective = perform_perspective_transform(warped_lane, perspective_transform_components[1])
 
     #combine (weight) the result with the original image
     projected_lane = cv2.addWeighted(undistorted_test_road_image, 1, warped_to_original_perspective, 0.3, 0)
