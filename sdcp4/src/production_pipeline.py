@@ -120,9 +120,9 @@ def process_frame(image):
     ## compute vehicle offset from center ##
     vehicle_offset = compute_vehicle_offset(thresholded_warped_undistorted_image.shape, left_lane_line_coeff, right_lane_line_coeff)
     
-    #########################################
-    ## PERFORM PROJECTION BACK ON TO ROAD  ##
-    #########################################
+    ########################################
+    ## PERFORM PROJECTION BACK ONTO ROAD  ##
+    ########################################
     
     #create an image to draw the lines on
     warped_lane = np.zeros_like(warped_undistorted_image).astype(np.uint8)
