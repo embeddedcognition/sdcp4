@@ -19,9 +19,11 @@ from production_pipeline import execute_production_pipeline
 
 #set image size for the camera we're working with
 camera_image_size = (1280, 720) #(cols, rows)
+
 #inside corner count of chessboard calibration images
 num_column_points = 9  #total inside corner points across the x-axis
 num_row_points = 6     #total inside corner points across the y-axis
+
 #path to calibration images
 path_to_calibration_images = "camera_cal/*.jpg"
 
@@ -71,13 +73,12 @@ perspective_transform_components = (warp_perspective_matrix, unwarp_perspective_
 ## TEST PIPELINE ##
 ###################
 
-#test the execution of the pipeline stages (output from each stage is written to the 'output_images' folder)  
+#test the execution of the pipeline stages (output from each stage is saved to the output_images directory)  
 execute_test_pipeline(calibration_components, perspective_transform_components, (src_upper_left, src_lower_left, src_lower_right, src_upper_right))
 
 #########################
 ## PRODUCTION PIPELINE ##
 #########################
 
-#execute the pipeline - producing a video  
+#execute the pipeline (producing a video that is saved to the output_video directory)   
 execute_production_pipeline(calibration_components, perspective_transform_components)
-

@@ -12,7 +12,7 @@ import matplotlib.image as mpimg
 import glob
 import cv2
 
-#generate calibration camera matrix and distortion coefficients based on supplied (chessboard) calibration images
+#generate calibration camera matrix and distortion coefficients based on supplied chessboard dimensions and chessboard calibration images
 #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
 def generate_calibration_components(num_column_points, num_row_points, path_to_calibration_images, camera_image_size): 
     #lists to store object/image points for all calibration images

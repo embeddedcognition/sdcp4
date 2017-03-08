@@ -29,18 +29,20 @@ def execute_production_pipeline(my_calibration_components, my_perspective_transf
     global perspective_transform_components
     global prev_left_lane_line_coeff_queue
     global prev_right_lane_line_coeff_queue
+
     #set globals
     calibration_components = my_calibration_components
     perspective_transform_components= my_perspective_transform_components
     #initialize queues (storing a max of 10 sets of polynomial coefficients for both the left and right lanes
     prev_left_lane_line_coeff_queue = deque(maxlen=10)
     prev_right_lane_line_coeff_queue = deque(maxlen=10)
+
     #generate video
     clip_handle = VideoFileClip("test_video/project_video.mp4")
     image_handle = clip_handle.fl_image(process_frame)
     image_handle.write_videofile("output_video/processed_project_video.mp4", audio=False)
 
-#process a frame of video
+#process a frame of video through the pipeline
 def process_frame(image):
     
     ###################################
@@ -137,7 +139,7 @@ def process_frame(image):
     cv2.polylines(warped_lane, np.int_([pts_left]), False, color=(189,183,107), thickness=20, lineType=cv2.LINE_AA)
     cv2.polylines(warped_lane, np.int_([pts_right]), False, color=(189,183,107), thickness=20, lineType=cv2.LINE_AA)
 
-    #transform perspective back to original
+    #transform perspective back to original (unwarp)
     warped_to_original_perspective = perform_perspective_transform(warped_lane, perspective_transform_components[1])
 
     #combine (weight) result with the original image

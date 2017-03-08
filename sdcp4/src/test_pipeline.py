@@ -15,7 +15,7 @@ from perspective_processor import perform_perspective_transform
 from threshold_processor import perform_thresholding
 from lane_processor import perform_educated_lane_line_pixel_search, perform_blind_lane_line_pixel_search, compute_lane_line_coefficients, compute_curvature_of_lane_lines, compute_vehicle_offset
 
-#test the pipeline components and produce outputs in the 'output_images' folder
+#test the pipeline components and produce outputs in the output_images directory
 #perspective_transform_components[0] is warp_perspective_matrix, perspective_transform_components[1] is unwarp_perspective_matrix
 def execute_test_pipeline(calibration_components, perspective_transform_components, src_vertices):
     
@@ -174,7 +174,7 @@ def execute_test_pipeline(calibration_components, perspective_transform_componen
     #save image
     mpimg.imsave("output_images/stage4_warped_lane_straight_lines1.jpg", warped_lane)
 
-    #transform perspective back to original
+    #transform perspective back to original (unwarp)
     warped_to_original_perspective = perform_perspective_transform(warped_lane, perspective_transform_components[1])
 
     #combine (weight) the result with the original image
